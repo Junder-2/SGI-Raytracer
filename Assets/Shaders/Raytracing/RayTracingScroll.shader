@@ -54,13 +54,6 @@ Shader "RayTracing/DxrScroll"
 					
             #include "HelperFunc.cginc"
 
-            float _Intensity;
-            float _Reflection;
-            float _Refraction;
-            
-            float _SpecularStrength;
-            float _SpecularPower;        
-
             float _ScrollSpeed;
             float2 _ScrollDir;
 
@@ -176,10 +169,10 @@ Shader "RayTracing/DxrScroll"
 
                 int shadowSamples = _renderShadows;
 
-                MainLightCalc(worldNormal, worldPos, _SpecularPower, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+                MainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
                 //diffuse += lightColor;
 
-                AdditionalLightCalc(worldNormal, worldPos, _SpecularPower, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+                AdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
 
                 //toonShading lol
                 //shadowFactor = smoothstep(0.47f, 0.53f, shadowFactor);

@@ -1,30 +1,39 @@
 #include "Lights.hlsl"
 #include "Common.cginc"
-#include "HLSLSupport.cginc"
 
-float4 _Color;
-Texture2D _MainTex;
-float4 _MainTex_ST;
-SamplerState sampler_MainTex;
-Texture2D _SpecularMap;
-float4 _SpecularMap_ST;
-SamplerState sampler_SpecularMap;
-float4 _SpecularColor;
-Texture2D _NormalMap;
-float4 _NormalMap_ST;
-SamplerState sampler_NormalMap;
-float _NormalStrength;
+CBUFFER_START(UnityPerMaterial)
 
-float _FakeThickness;
+    float4 _Color;
+    Texture2D _MainTex;
+    float4 _MainTex_ST;
+    SamplerState sampler_MainTex;
+    Texture2D _SpecularMap;
+    float4 _SpecularMap_ST;
+    SamplerState sampler_SpecularMap;
+    float4 _SpecularColor;
+    Texture2D _NormalMap;
+    float4 _NormalMap_ST;
+    SamplerState sampler_NormalMap;
+    float _NormalStrength;
 
-bool _ReceiveShadows;
-//bool _ReflectionOverride;
-bool _CullBackfaces;
-float _AlphaClip;
-float _ShadowOffset;
+    float _FakeThickness;
 
-#pragma shader_feature _ReflectionOverride
-#pragma shader_feature _UseRefraction
+    bool _CullBackfaces;
+    float _AlphaClip;
+    float _ShadowOffset;
+
+    float _Intensity;
+    float _Reflection;
+    float _Refraction;
+                
+    float _SpecularStrength;
+    half _SpecularFactor;
+
+CBUFFER_END
+
+#pragma shader_feature_local _ RECEIVE_SHADOWS
+#pragma shader_feature_local _ REFLECTION_OVERRIDE
+#pragma shader_feature_local _ USE_REFRACTION
 //#pragma shader_feature _HasFakeThickness
 
 bool ShouldReflect(float reflection, RayPayload rayPayload)
@@ -34,7 +43,7 @@ bool ShouldReflect(float reflection, RayPayload rayPayload)
     if(_maxReflectDepth == 0 || rayPayload.depth >= _maxReflectDepth)
         return shouldReflect;
 
-    #ifndef _ReflectionOverride
+    #ifndef REFLECTION_OVERRIDE
         if(reflection > .5f)
             shouldReflect = true;
 
@@ -102,54 +111,60 @@ void MainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, flo
     float shadowAmount = 1;
 
     float lightStrength = mainLight.distanceAttenuation*dot(mainLight.color, float3(0.2126, 0.7152, 0.0722));
-    float currLightAmount = 0;
 
     if(mainLight.distanceAttenuation >= 0)
-    {                                   
-        if(_renderShadows != 0 && _ReceiveShadows)
-        {  
-            shadowAmount = 0;
-            int maxSamples = _renderShadows;
-            int samples = maxSamples;
-
-            half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
-            if (all(perpX == 0.0f)) {
-                perpX.x = 1.0;
-            }
-            half3 perpY = cross(perpX, -lightDir);
-
-            while(samples > 0)
+    {
+        float currLightAmount = 0;
+        #ifdef RECEIVE_SHADOWS
+            if(_renderShadows != 0)
             {
-                float3 samplePos = (worldPos+lightDir*100.0f);
-                float sampleDist = (100.0f);
-                half3 sampleDir = -lightDir;
+                shadowAmount = 0;
+                int maxSamples = _renderShadows;
+                int samples = maxSamples;
 
-                if(_renderShadows != 1)
+                half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
+                if (all(perpX == 0.0f)) {
+                    perpX.x = 1.0;
+                }
+                half3 perpY = cross(perpX, -lightDir);
+
+                while(samples > 0)
                 {
-                    float2 randomVector = float2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
-                    randomVector = normalize(randomVector) * saturate(length(randomVector));
+                    float3 samplePos = (worldPos+lightDir*100.0f);
+                    float sampleDist = (100.0f);
+                    half3 sampleDir = -lightDir;
 
-                    samplePos += perpX*randomVector.x*_sunSpread + perpY*randomVector.y*_sunSpread;
+                    if(_renderShadows != 1)
+                    {
+                        float2 randomVector = float2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
+                        randomVector = normalize(randomVector) * saturate(length(randomVector));
 
-                    sampleDist = length(samplePos - worldPos);
-                    sampleDir = normalize(worldPos- samplePos);
-                }                           
+                        samplePos += perpX*randomVector.x*_sunSpread + perpY*randomVector.y*_sunSpread;
 
-                bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+                        sampleDist = length(samplePos - worldPos);
+                        sampleDir = normalize(worldPos- samplePos);
+                    }                           
 
-                shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
-                
-                samples--;
+                    bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+
+                    shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
+                    
+                    samples--;
+                }
+
+                currLightAmount = shadowAmount*facing*lightStrength;
+                shadowFactor += currLightAmount;
             }
-
-            currLightAmount = shadowAmount*facing*lightStrength;
-            shadowFactor += currLightAmount;
-        }
-        else
-        {
+            else
+            {
+                currLightAmount = facing*lightStrength;
+                shadowFactor += currLightAmount;
+            }
+        #else
             currLightAmount = facing*lightStrength;
             shadowFactor += currLightAmount;
-        }                        
+        #endif
+
 
         diffuse += mainLight.color*mainLight.distanceAttenuation;//*shadowAmount;    
 
@@ -173,52 +188,58 @@ void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor
         float shadowAmount = 1;
 
         float currLightAmount = 0;
-
+        
         if(light.distanceAttenuation >= 0)
         {
-            if(_renderShadows != 0 && _ReceiveShadows)
-            {                
-                shadowAmount = 0;
-                int maxSamples = _renderShadows;
-                int samples = maxSamples;
+            #ifdef RECEIVE_SHADOWS
+                if(_renderShadows != 0)
+                {                
+                    shadowAmount = 0;
+                    int maxSamples = _renderShadows;
+                    int samples = maxSamples;
 
-                half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
-                if (all(perpX == 0.0f)) {
-                    perpX.x = 1.0;
-                }
-                half3 perpY = cross(perpX, -lightDir);
-
-                while(samples > 0)
-                {
-                    float3 samplePos = worldPos+lightDir*light.distance;
-                    float sampleDist = light.distance-gShadowOffset;
-                    half3 sampleDir = -lightDir;
-
-                    if(_renderShadows != 1)
-                    {
-                        half2 randomVector = half2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
-                        randomVector = normalize(randomVector) * saturate(length(randomVector));
-
-                        samplePos += perpX*randomVector.x + perpY*randomVector.y;
-                        sampleDist = length(samplePos - worldPos);
-                        sampleDir = normalize(worldPos- samplePos);
+                    half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
+                    if (all(perpX == 0.0f)) {
+                        perpX.x = 1.0;
                     }
+                    half3 perpY = cross(perpX, -lightDir);
 
-                    bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+                    while(samples > 0)
+                    {
+                        float3 samplePos = worldPos+lightDir*light.distance;
+                        float sampleDist = light.distance-gShadowOffset;
+                        half3 sampleDir = -lightDir;
 
-                    shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
+                        if(_renderShadows != 1)
+                        {
+                            half2 randomVector = half2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
+                            randomVector = normalize(randomVector) * saturate(length(randomVector));
+
+                            samplePos += perpX*randomVector.x + perpY*randomVector.y;
+                            sampleDist = length(samplePos - worldPos);
+                            sampleDir = normalize(worldPos- samplePos);
+                        }
+
+                        bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+
+                        shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
+                        
+                        samples--;
+                    }
                     
-                    samples--;
+                    currLightAmount = shadowAmount*facing*lightStrength;
+                    shadowFactor += currLightAmount;
                 }
-                
-                currLightAmount = shadowAmount*facing*lightStrength;
-                shadowFactor += currLightAmount;
-            }
-            else
-            {
+                else
+                {
+                    currLightAmount = facing*lightStrength;
+                    shadowFactor += currLightAmount;
+                }
+            #else
                 currLightAmount = facing*lightStrength;
                 shadowFactor += currLightAmount;
-            }
+            #endif
+            
 
             diffuse += light.color*light.distanceAttenuation;//*shadowAmount;
 
@@ -297,7 +318,7 @@ void TransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float refr
 
     int flags = RAY_FLAG_FORCE_NON_OPAQUE;
 
-    #ifdef _UseRefraction
+    #ifdef USE_REFRACTION
 
         //float fakeThickness = _FakeThickness/10.0f;
         /*#ifdef _HasFakeThickness

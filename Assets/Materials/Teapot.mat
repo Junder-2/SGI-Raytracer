@@ -25,12 +25,18 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - RECEIVE_SHADOWS
+  - REFLECTION_OVERRIDE
+  - USE_ALPHA
+  - USE_REFLECTIONS
+  - USE_REFRACTION
+  m_InvalidKeywords:
+  - _CULLBACKFACES_ON
   - _ReflectionOverride
   - _UseAlpha
+  - _UseNormalMap_OFF
   - _UseReflections
   - _UseRefraction
-  m_InvalidKeywords:
-  - _UseNormalMap_OFF
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0

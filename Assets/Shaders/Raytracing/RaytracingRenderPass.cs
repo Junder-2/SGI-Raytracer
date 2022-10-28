@@ -104,20 +104,11 @@ public class RaytracingRenderPass : ScriptableRenderPass
         ref var cameraData = ref renderingData.cameraData;
 
         var _camera = cameraData.camera;
-
-        // frustum corners for current camera transform
-		Vector3 bottomLeft = _camera.ViewportToWorldPoint(new Vector3(0, 0, _camera.farClipPlane)).normalized;
-		Vector3 topLeft = _camera.ViewportToWorldPoint(new Vector3(0, 1, _camera.farClipPlane)).normalized;
-		Vector3 bottomRight = _camera.ViewportToWorldPoint(new Vector3(1, 0, _camera.farClipPlane)).normalized;
-		Vector3 topRight = _camera.ViewportToWorldPoint(new Vector3(1, 1, _camera.farClipPlane)).normalized;
-
-        command.SetRayTracingVectorParam(rayTracingShader, "_WorldSpaceCameraPos", cameraData.worldSpaceCameraPos);
+        
         command.SetRayTracingIntParam(rayTracingShader, "_cullBackfaces", m_rayTracing.CullBackfaces.GetValue<bool>() ? 1 : 0);
-
-        command.SetRayTracingVectorParam(rayTracingShader, "_TopLeftFrustumDir", topLeft);
-        command.SetRayTracingVectorParam(rayTracingShader, "_TopRightFrustumDir", topRight);
-        command.SetRayTracingVectorParam(rayTracingShader, "_BottomLeftFrustumDir", bottomLeft);
-        command.SetRayTracingVectorParam(rayTracingShader, "_BottomRightFrustumDir", bottomRight);
+        
+        command.SetRayTracingMatrixParam(rayTracingShader, "_CameraToWorld", _camera.cameraToWorldMatrix);
+        command.SetRayTracingMatrixParam(rayTracingShader, "_CameraInverseProjection", _camera.projectionMatrix.inverse);
 
         command.SetRayTracingIntParam(rayTracingShader, "_FrameIndex", Mathf.FloorToInt(_frameIndex));
         command.SetRayTracingVectorParam(rayTracingShader, "bottomColor", m_rayTracing.floorColor.GetValue<Color>());

@@ -20,24 +20,28 @@ struct v2f
 	float3 normal : TEXCOORD5;
 };
 
-float4 _Color;
-Texture2D _MainTex;
-float4 _MainTex_ST;
-SamplerState sampler_MainTex;
+CBUFFER_START(UnityPerMaterial)
 
-float3 _SpecularColor;
-Texture2D _SpecularMap;
-float3 _SpecularMap_ST;
-SamplerState sampler_SpecularMap;
-float _SpecularStrength;
-float _SpecularPower;    
+	float4 _Color;
+	Texture2D _MainTex;
+	float4 _MainTex_ST;
+	SamplerState sampler_MainTex;
 
-Texture2D _NormalMap;
-float4 _NormalMap_ST;
-SamplerState sampler_NormalMap;
-float _NormalStrength;
+	float3 _SpecularColor;
+	Texture2D _SpecularMap;
+	float3 _SpecularMap_ST;
+	SamplerState sampler_SpecularMap;
+	float _SpecularStrength;
+	float _SpecularPower;    
 
-float _Reflection;
+	Texture2D _NormalMap;
+	float4 _NormalMap_ST;
+	SamplerState sampler_NormalMap;
+	float _NormalStrength;
+
+	float _Reflection;
+
+CBUFFER_END
 
 uniform float4 _LightColor0;
 uniform float4 _GlossyEnvironmentColor;

@@ -11,9 +11,14 @@ Material:
   m_Shader: {fileID: 4800000, guid: 8a23dfb7a834a2445ab899a9ed3d483e, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - RECEIVE_SHADOWS
+  - USE_ALPHA
+  - USE_REFRACTION
   m_InvalidKeywords:
+  - _RECEIVESHADOWS_ON
   - _ReflectionOverride_OFF
+  - _USEALPHA_ON
   - _UseNormalMap_OFF
   - _UseReflections_OFF
   m_LightmapFlags: 4

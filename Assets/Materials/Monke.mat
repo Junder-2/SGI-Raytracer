@@ -12,11 +12,15 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _UseAlpha
-  - _UseReflections
+  - RECEIVE_SHADOWS
+  - USE_REFLECTIONS
   m_InvalidKeywords:
+  - _CASTDROPSHADOW_ON
+  - _CULLBACKFACES_ON
   - _ReflectionOverride_OFF
+  - _UseAlpha
   - _UseNormalMap_OFF
+  - _UseReflections
   - _UseRefraction_OFF
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -98,7 +102,7 @@ Material:
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
-    - _CastDropShadow: 1
+    - _CastDropShadow: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 2
@@ -135,7 +139,7 @@ Material:
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
-    - _UseAlpha: 1
+    - _UseAlpha: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:

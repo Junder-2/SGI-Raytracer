@@ -12,10 +12,14 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _UseNormalMap
+  - RECEIVE_SHADOWS
+  - USE_NORMALMAP
   m_InvalidKeywords:
+  - _CULLBACKFACES_ON
+  - _RECEIVESHADOWS_ON
   - _ReflectionOverride_OFF
   - _UseAlpha_OFF
+  - _UseNormalMap
   - _UseReflections_OFF
   - _UseRefraction_OFF
   m_LightmapFlags: 4
