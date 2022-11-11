@@ -86,22 +86,22 @@ Light GetAdditionalPerObjectLight(int perObjectLightIndex, float3 positionWS)
     half3 color = _AdditionalLightsBuffer[perObjectLightIndex].color.rgb;
     half4 distanceAndSpotAttenuation = _AdditionalLightsBuffer[perObjectLightIndex].attenuation;
     half4 spotDirection = _AdditionalLightsBuffer[perObjectLightIndex].spotDirection;
-#ifdef _LIGHT_LAYERS
-    uint lightLayerMask = _AdditionalLightsBuffer[perObjectLightIndex].layerMask;
-#else
-    uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
-#endif
+    #ifdef _LIGHT_LAYERS
+        uint lightLayerMask = _AdditionalLightsBuffer[perObjectLightIndex].layerMask;
+    #else
+        uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
+    #endif
 
 #else
     float4 lightPositionWS = _AdditionalLightsPosition[perObjectLightIndex];
     half3 color = _AdditionalLightsColor[perObjectLightIndex].rgb;
     half4 distanceAndSpotAttenuation = _AdditionalLightsAttenuation[perObjectLightIndex];
     half4 spotDirection = _AdditionalLightsSpotDir[perObjectLightIndex];
-#ifdef _LIGHT_LAYERS
-    uint lightLayerMask = asuint(_AdditionalLightsLayerMasks[perObjectLightIndex]);
-#else
-    uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
-#endif
+    #ifdef _LIGHT_LAYERS
+        uint lightLayerMask = asuint(_AdditionalLightsLayerMasks[perObjectLightIndex]);
+    #else
+        uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
+    #endif
 
 #endif
 
@@ -166,6 +166,7 @@ int GetPerObjectLightIndex(uint index)
     // We limit to 4 indices per object and only sample unity_4LightIndices0.
     // Conditional moves are branch free even on mali-400
     // small arithmetic cost but no extra register pressure from ImmCB_0_0_0 matrix.
+    
     half indexHalf = half(index);
     half2 lightIndex2 = (indexHalf < half(2.0)) ? unity_LightIndices[0].xy : unity_LightIndices[0].zw;
     half i_rem = (indexHalf < half(2.0)) ? indexHalf : indexHalf - half(2.0);
@@ -194,6 +195,7 @@ int GetAdditionalLightsCount()
     // TODO: we need to expose in SRP api an ability for the pipeline cap the amount of lights
     // in the culling. This way we could do the loop branch with an uniform
     // This would be helpful to support baking exceeding lights in SH as well
-    return int(min(_AdditionalLightsCount.x, unity_LightData.y));
+    return int(_AdditionalLightsCount.x); //prevents pop in
+    //return int(min(_AdditionalLightsCount.x, unity_LightData.y));
 #endif
 }

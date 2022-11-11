@@ -178,18 +178,18 @@ void MainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, flo
 void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor, half specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
 {
     int pixelLightCount = GetAdditionalLightsCount();
-    for (int i = 0; i < pixelLightCount; ++i) 
-    {                        
-        Light light = GetAdditionalLight(i, worldPos);
+    for (int i = 0; i < pixelLightCount; i++) 
+    {
+        Light light = GetAdditionalPerObjectLight(i, worldPos);
         float3 lightDir = light.direction;
-        float facing = max((dot(lightDir, worldNormal)), 0);  
+        float facing = max((dot(lightDir, worldNormal)), 0);
 
         float lightStrength = light.distanceAttenuation*dot(light.color, float3(0.2126, 0.7152, 0.0722));
         float shadowAmount = 1;
 
         float currLightAmount = 0;
         
-        if(light.distanceAttenuation >= 0)
+        if(light.distanceAttenuation > 0)
         {
             #ifdef RECEIVE_SHADOWS
                 if(_renderShadows != 0)
@@ -241,7 +241,7 @@ void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor
             #endif
             
 
-            diffuse += light.color*light.distanceAttenuation;//*shadowAmount;
+            diffuse += light.color*currLightAmount;
 
             if(rayPayload.depth < _maxReflectDepth+1 && facing != 0)
             {
@@ -251,7 +251,7 @@ void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor
     }
 }
 
-void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, RayPayload rayPayload, inout float3 reflect)
+void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, RayPayload rayPayload, inout float3 reflection)
 {
     RayDesc reflectRay;
     reflectRay.Origin = worldPos;
@@ -269,7 +269,7 @@ void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, R
 
     TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
 
-    reflect = reflectPayload.color*reflectStrength;
+    reflection = reflectPayload.color*reflectStrength;
 }
 
 void IndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPayload rayPayload, inout half3 indirect)

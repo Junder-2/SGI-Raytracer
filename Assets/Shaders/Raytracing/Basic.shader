@@ -172,8 +172,6 @@ Shader "RayTracing/DxrDiffuse"
                     CalcNormalMap(tangentNormal, _NormalStrength, currentvertex, worldNormal);
                 #endif
 
-                float3 reflectDir = reflect(rayDir, worldNormal);  
-
                 //float3 lightColor = 0;  
                 float3 specular = 0;
                 half shadowFactor = 0;
@@ -182,7 +180,7 @@ Shader "RayTracing/DxrDiffuse"
 				
                 MainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
 
-                #ifdef DISABLE_ADDITIONAL_LIGHTS
+                # ifndef  DISABLE_ADDITIONAL_LIGHTS
                     AdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
 				#endif
 				
@@ -192,13 +190,15 @@ Shader "RayTracing/DxrDiffuse"
                 //toonShading lol
                 //shadowFactor = smoothstep(0.47f, 0.53f, shadowFactor);
 
-                float3 reflect = color.xyz;             
+                float3 reflectionColor = color.xyz;				
 
                 #ifdef USE_REFLECTIONS
+					float3 reflectDir = reflect(rayDir, worldNormal); 
+				
                     bool shouldReflect = false;
 
                     if(ShouldReflect(_Reflection, rayPayload))
-                        ReflectionCalc(worldPos, reflectDir, _Reflection*_SpecularColor, rayPayload, reflect);                             
+                        ReflectionCalc(worldPos, reflectDir, _Reflection*_SpecularColor, rayPayload, reflectionColor);                             
                 #endif
 
                 if(rayPayload.depth < 1 && _maxIndirectDepth != 0)
@@ -206,12 +206,12 @@ Shader "RayTracing/DxrDiffuse"
 
                 #ifdef USE_ALPHA
                     if(alpha < 1 && rayPayload.depth < _maxRefractionDepth)
-                        TransparentCalc(alpha, worldPos, worldNormal, _Refraction, rayPayload, color, reflect);
+                        TransparentCalc(alpha, worldPos, worldNormal, _Refraction, rayPayload, color, reflectionColor);
                 #endif
   
-                rayPayload.color += float4(lerp(color.xyz, reflect, _Reflection)*lerp(1, diffuse, alpha), 1)*_Intensity;
+                rayPayload.color += float4((lerp(color.xyz, reflectionColor, _Reflection)*lerp(1, (diffuse+indirect), alpha)), 1)*_Intensity;
                 rayPayload.color += float4(specular*_SpecularColor*alpha, 0);
-                rayPayload.color *= float4(lerp(1, shadowFactor + indirect, alpha), 1);
+				rayPayload.color *= float4(lerp(1, saturate(shadowFactor+indirect) ,alpha), 1);
 
                 //rayPayload.color = float4(debug, 1);
 
