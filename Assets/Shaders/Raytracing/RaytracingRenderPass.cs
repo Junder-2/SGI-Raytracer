@@ -115,7 +115,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         command.SetRayTracingVectorParam(rayTracingShader, "skyColor", m_rayTracing.skyColor.GetValue<Color>());
         command.SetRayTracingFloatParam(rayTracingShader, "_IndirectSkyStrength", m_rayTracing.IndirectSkyStrength.GetValue<float>());
 
-        if(RenderSettings.skybox.HasTexture("_Tex") && m_rayTracing.UseSkybox.GetValue<bool>())
+        if(RenderSettings.skybox != null && RenderSettings.skybox.HasTexture("_Tex") && m_rayTracing.UseSkybox.GetValue<bool>())
         {
             command.SetGlobalTexture("g_EnvTex", RenderSettings.skybox.GetTexture("_Tex"));
             command.SetRayTracingIntParam(rayTracingShader, "_useSkyBox", 1);

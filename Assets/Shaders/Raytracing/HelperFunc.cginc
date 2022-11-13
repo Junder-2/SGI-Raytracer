@@ -18,16 +18,17 @@ CBUFFER_START(UnityPerMaterial)
 
     float _FakeThickness;
 
-    bool _CullBackfaces;
-    float _AlphaClip;
-    float _ShadowOffset;
+    bool _CullBackfaces = false;
+    bool _Unlit = false;
+    float _AlphaClip = 0;
+    float _ShadowOffset = 0;
 
-    float _Intensity;
-    float _Reflection;
-    float _Refraction;
+    float _Intensity = 1;
+    float _Reflection = 0;
+    float _Refraction = 0;
                 
-    float _SpecularStrength;
-    half _SpecularFactor;
+    float _SpecularStrength = 1;
+    half _SpecularFactor = 60;
 
 CBUFFER_END
 
@@ -269,7 +270,7 @@ void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, R
 
     TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
 
-    reflection = reflectPayload.color*reflectStrength;
+    reflection = reflectPayload.color*reflectStrength*_Intensity;
 }
 
 void IndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPayload rayPayload, inout half3 indirect)

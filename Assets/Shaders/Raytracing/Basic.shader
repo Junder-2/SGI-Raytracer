@@ -36,6 +36,7 @@ Shader "RayTracing/DxrDiffuse"
         [Toggle(USE_ALPHA)]_UseAlpha ("UseAlpha", Float) = 0
         [Toggle(RECEIVE_SHADOWS)]_ReceiveShadows ("ReceiveShadows", Float) = 1
         [Toggle(REFLECTION_OVERRIDE)]_ReflectionOverride ("ReflectionOverride", Float) = 0
+        [Toggle(UNLIT)]_Unlit("Unlit", Float) = 0
         [Toggle(DISABLE_ADDITIONAL_LIGHTS)]_DisableAdditionalLights ("DisableAdditionalLights", Float) = 0
         [Toggle(CAST_DROP_SHADOW)]_CastDropShadow("CastDropShadow", Float) = 0        
         //_FakeThickness ("FakeThickness", Range(0, 1)) = 0
@@ -75,6 +76,7 @@ Shader "RayTracing/DxrDiffuse"
             #pragma shader_feature_local _ USE_NORMALMAP            
             #pragma shader_feature_local _ DISABLE_ADDITIONAL_LIGHTS
             #pragma shader_feature_local _ CAST_DROP_SHADOW
+            #pragma shader_feature_local _ UNLIT
 					
             #include "HelperFunc.cginc"
 
@@ -164,6 +166,8 @@ Shader "RayTracing/DxrDiffuse"
                 #else
                     float alpha = 1;
                 #endif
+                color = color*_Intensity;
+
                 float3 specColor = _SpecularColor*_SpecularMap.SampleLevel(sampler_SpecularMap, uv, LOD);
 
                 #ifdef USE_NORMALMAP
@@ -177,12 +181,18 @@ Shader "RayTracing/DxrDiffuse"
                 half shadowFactor = 0;
                 half3 indirect = _GlossyEnvironmentColor.xyz;
                 float3 diffuse = 0;
-				
-                MainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
 
-                # ifndef  DISABLE_ADDITIONAL_LIGHTS
-                    AdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
-				#endif
+                #ifndef UNLIT
+				
+                    MainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+
+                    #ifndef  DISABLE_ADDITIONAL_LIGHTS
+                        AdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+                    #endif
+
+                #else
+                    diffuse = 1;
+                #endif
 				
 				if(_useDropShadows && rayPayload.depth < 1)
 					DropShadowRay(worldPos, shadowFactor);				
@@ -209,7 +219,7 @@ Shader "RayTracing/DxrDiffuse"
                         TransparentCalc(alpha, worldPos, worldNormal, _Refraction, rayPayload, color, reflectionColor);
                 #endif
   
-                rayPayload.color += float4((lerp(color.xyz, reflectionColor, _Reflection)*lerp(1, (diffuse+indirect), alpha)), 1)*_Intensity;
+                rayPayload.color += float4((lerp(color.xyz, reflectionColor, _Reflection)*lerp(1, (diffuse+indirect), alpha)), 1);
                 rayPayload.color += float4(specular*_SpecularColor*alpha, 0);
 				rayPayload.color *= float4(lerp(1, saturate(shadowFactor+indirect) ,alpha), 1);
 
