@@ -4,52 +4,50 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.Universal;
 public class RaytracingRenderPass : ScriptableRenderPass
 {
-    string profilerTag;
+    private string _profilerTag;
 
-    RTHandle currentTarget;
-    RenderTexture resultTexture;
-    RayTracingShader rayTracingShader;
-    Material blendMat;
+    private RTHandle _currentTarget;
+    private RenderTexture _resultTexture;
+    private readonly RayTracingShader rayTracingShader;
+    private Material _blendMat;
 
-    LayerMask updateLayers;
+    LayerMask _updateLayers;
 
-    public static RayTracingAccelerationStructure accelerationStructure;
+    private static RayTracingAccelerationStructure _accelerationStructure;
 
-    private CommandBuffer command;
-
-    Shader globalParams;
+    private CommandBuffer _command;
 
     float _frameIndex;
 
-    bool init = false;
+    bool _init = false;
 
     public RaytracingRenderPass(string profilerTag, RenderPassEvent renderPassEvent, RayTracingShader shader, Material blendMat, LayerMask mask)
     {
-        this.profilerTag = profilerTag;
-        updateLayers = mask;
+        this._profilerTag = profilerTag;
+        _updateLayers = mask;
         rayTracingShader = shader;
         this.renderPassEvent = renderPassEvent;
-        this.blendMat = blendMat;
+        this._blendMat = blendMat;
 
         var settings = new RayTracingAccelerationStructure.RASSettings();
-        settings.layerMask = updateLayers;
+        settings.layerMask = _updateLayers;
         settings.managementMode = RayTracingAccelerationStructure.ManagementMode.Automatic;
         settings.rayTracingModeMask = RayTracingAccelerationStructure.RayTracingModeMask.Everything;
 
-        accelerationStructure = new RayTracingAccelerationStructure(settings);
+        _accelerationStructure = new RayTracingAccelerationStructure(settings);
         var stack = VolumeManager.instance.stack;
         m_rayTracing = stack.GetComponent<Raytracing>();
         if (m_rayTracing == null) return;
         if (!m_rayTracing.IsActive()) return;
-        m_rayTracing.RetrieveInstances(ref accelerationStructure);
+        m_rayTracing.RetrieveInstances(ref _accelerationStructure);
 
         _frameIndex = 0;
-        init = true;
+        _init = true;
     }
 
     public void Setup(in RTHandle currentTarget)
     {
-        this.currentTarget = currentTarget;
+        this._currentTarget = currentTarget;
     }
 
     Raytracing m_rayTracing;
@@ -62,11 +60,11 @@ public class RaytracingRenderPass : ScriptableRenderPass
         if (m_rayTracing == null) return;
         if (!m_rayTracing.IsActive()) return;
 
-        if(accelerationStructure.GetInstanceCount() == 0) m_rayTracing.RetrieveInstances(ref accelerationStructure);
-        accelerationStructure.Build();
+        if(_accelerationStructure.GetInstanceCount() == 0) m_rayTracing.RetrieveInstances(ref _accelerationStructure);
+        _accelerationStructure.Build();
 
-        command = CommandBufferPool.Get(profilerTag);
-        if(init)
+        _command = CommandBufferPool.Get(_profilerTag);
+        if(_init)
             InitCommandBuffer();
 
         _frameIndex += Time.deltaTime*60f;
@@ -74,20 +72,20 @@ public class RaytracingRenderPass : ScriptableRenderPass
         if(m_rayTracing.UpdateParameters)
             UpdateCommandBuffer(ref renderingData);
         Render(ref renderingData);
-        context.ExecuteCommandBuffer(command);
-        CommandBufferPool.Release(command);
+        context.ExecuteCommandBuffer(_command);
+        CommandBufferPool.Release(_command);
     }
 
     void InitResultTexture(int width, int height)
     {
-        if (resultTexture == null || resultTexture.width != width || resultTexture.height != height)
+        if (_resultTexture == null || _resultTexture.width != width || _resultTexture.height != height)
         {
-            if (resultTexture != null)
-                resultTexture.Release();
+            if (_resultTexture != null)
+                _resultTexture.Release();
 
-            resultTexture = new RenderTexture(width, height, 0, RenderTextureFormat.DefaultHDR, RenderTextureReadWrite.Linear);
-            resultTexture.enableRandomWrite = true;
-            resultTexture.Create();     
+            _resultTexture = new RenderTexture(width, height, 0, RenderTextureFormat.DefaultHDR, RenderTextureReadWrite.Linear);
+            _resultTexture.enableRandomWrite = true;
+            _resultTexture.Create();     
 
             InitCommandBuffer();
         }
@@ -95,34 +93,34 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
     void InitCommandBuffer()
     {        
-        command.SetRayTracingShaderPass(rayTracingShader, "MyRaytracingPass");
-        command.SetRayTracingAccelerationStructure(rayTracingShader, "_RaytracingAccelerationStructure", accelerationStructure);
+        _command.SetRayTracingShaderPass(rayTracingShader, "MyRaytracingPass");
+        _command.SetRayTracingAccelerationStructure(rayTracingShader, "_RaytracingAccelerationStructure", _accelerationStructure);
     }
 
     void UpdateCommandBuffer(ref RenderingData renderingData)
     {
         ref var cameraData = ref renderingData.cameraData;
 
-        var _camera = cameraData.camera;
+        var camera = cameraData.camera;
         
-        command.SetRayTracingIntParam(rayTracingShader, "_cullBackfaces", m_rayTracing.CullBackfaces.GetValue<bool>() ? 1 : 0);
+        _command.SetRayTracingIntParam(rayTracingShader, "_cullBackfaces", m_rayTracing.CullBackfaces.GetValue<bool>() ? 1 : 0);
         
-        command.SetRayTracingMatrixParam(rayTracingShader, "_CameraToWorld", _camera.cameraToWorldMatrix);
-        command.SetRayTracingMatrixParam(rayTracingShader, "_CameraInverseProjection", _camera.projectionMatrix.inverse);
+        _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraToWorld", camera.cameraToWorldMatrix);
+        _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
 
-        command.SetRayTracingIntParam(rayTracingShader, "_FrameIndex", Mathf.FloorToInt(_frameIndex));
-        command.SetRayTracingVectorParam(rayTracingShader, "bottomColor", m_rayTracing.floorColor.GetValue<Color>());
-        command.SetRayTracingVectorParam(rayTracingShader, "skyColor", m_rayTracing.skyColor.GetValue<Color>());
-        command.SetRayTracingFloatParam(rayTracingShader, "_IndirectSkyStrength", m_rayTracing.IndirectSkyStrength.GetValue<float>());
+        _command.SetRayTracingIntParam(rayTracingShader, "_FrameIndex", Mathf.FloorToInt(_frameIndex));
+        _command.SetRayTracingVectorParam(rayTracingShader, "bottomColor", m_rayTracing.floorColor.GetValue<Color>());
+        _command.SetRayTracingVectorParam(rayTracingShader, "skyColor", m_rayTracing.skyColor.GetValue<Color>());
+        _command.SetRayTracingFloatParam(rayTracingShader, "_IndirectSkyStrength", m_rayTracing.IndirectSkyStrength.GetValue<float>());
 
         if(RenderSettings.skybox != null && RenderSettings.skybox.HasTexture("_Tex") && m_rayTracing.UseSkybox.GetValue<bool>())
         {
-            command.SetGlobalTexture("g_EnvTex", RenderSettings.skybox.GetTexture("_Tex"));
-            command.SetRayTracingIntParam(rayTracingShader, "_useSkyBox", 1);
+            _command.SetGlobalTexture("g_EnvTex", RenderSettings.skybox.GetTexture("_Tex"));
+            _command.SetRayTracingIntParam(rayTracingShader, "_useSkyBox", 1);
         }
         else
         {
-            command.SetRayTracingIntParam(rayTracingShader, "_useSkyBox", 0);
+            _command.SetRayTracingIntParam(rayTracingShader, "_useSkyBox", 0);
         }
         
 
@@ -135,7 +133,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         Shader.SetGlobalInteger("_cullShadowBackfaces", m_rayTracing.DoubleSidedShadows.GetValue<bool>() ? 0 : 1);
         Shader.SetGlobalFloat("_sunSpread", m_rayTracing.SunSpread.GetValue<float>()+1);
 
-        float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*_camera.fieldOfView)/2f))/_camera.scaledPixelHeight);
+        float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*camera.fieldOfView)/2f))/camera.scaledPixelHeight);
         Shader.SetGlobalFloat("surfaceSpreadAngle", pixelSpreadAngle);
     }
 
@@ -145,13 +143,13 @@ public class RaytracingRenderPass : ScriptableRenderPass
         var w = cameraData.camera.scaledPixelWidth;
         var h = cameraData.camera.scaledPixelHeight;
 
-        var source = currentTarget;
+        var source = _currentTarget;
         InitResultTexture(w, h);        
 
-        command.SetRayTracingTextureParam(rayTracingShader, "RenderTarget", resultTexture);
-        command.DispatchRays(rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
+        _command.SetRayTracingTextureParam(rayTracingShader, "RenderTarget", _resultTexture);
+        _command.DispatchRays(rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         
-        command.Blit(resultTexture, source, blendMat, -1);
+        _command.Blit(_resultTexture, source, _blendMat, -1);
         //command.Blit(resultTexture, source);
     }
 }

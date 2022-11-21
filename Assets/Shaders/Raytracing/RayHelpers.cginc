@@ -16,8 +16,6 @@ CBUFFER_START(UnityPerMaterial)
     SamplerState sampler_NormalMap;
     float _NormalStrength;
 
-    float _FakeThickness;
-
     bool _CullBackfaces = false;
     bool _Unlit = false;
     float _AlphaClip = 0;
@@ -30,14 +28,15 @@ CBUFFER_START(UnityPerMaterial)
     float _SpecularStrength = 1;
     half _SpecularFactor = 60;
 
+    float _ScrollSpeed = 0;
+    float2 _ScrollDir;
 CBUFFER_END
 
 #pragma shader_feature_local _ RECEIVE_SHADOWS
 #pragma shader_feature_local _ REFLECTION_OVERRIDE
 #pragma shader_feature_local _ USE_REFRACTION
-//#pragma shader_feature _HasFakeThickness
 
-bool ShouldReflect(float reflection, RayPayload rayPayload)
+bool RayShouldReflect(float reflection, RayPayload rayPayload)
 {
     bool shouldReflect = false;
 
@@ -65,7 +64,7 @@ bool ShouldReflect(float reflection, RayPayload rayPayload)
     return shouldReflect;
 }
 
-float CalcLOD(Texture2D tex, IntersectionVertex vertex)
+float RayCalcLOD(Texture2D tex, IntersectionVertex vertex)
 {
     float pixelHeight = 0; float pixelWidth = 0;
     
@@ -75,7 +74,7 @@ float CalcLOD(Texture2D tex, IntersectionVertex vertex)
     return lambda;
 }
 
-void CalcNormalMap(float4 tangentNormal, float normalStrength, IntersectionVertex currentvertex, inout float3 worldNormal)
+void RayCalcNormalMap(float4 tangentNormal, float normalStrength, IntersectionVertex currentvertex, inout float3 worldNormal)
 {    
     tangentNormal = float4(normalize(UnpackScaleNormal(tangentNormal, normalStrength)), 1);
 
@@ -97,14 +96,14 @@ void BlinnPhongCalc(half3 lightDir, half3 worldNormal, float3 worldPos, half spe
     specular += pow(specAngle, specularFactor)*specularStrength;
 }
 
-void DropShadowRay(float3 worldPos, inout float shadowFactor)
+void RayDropShadowRay(float3 worldPos, inout float shadowFactor)
 {
     bool hit = ShadowRay(worldPos, half3(0, 1, 0), 3, 100, _cullShadowBackfaces, DROPSHADOW_FLAG);
 	
     shadowFactor *= (hit ? 0.0 : 1.0f);
 }
 
-void MainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, float specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
+void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, float specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
 {
     Light mainLight = GetMainLight();
     half3 lightDir = mainLight.direction;   
@@ -176,7 +175,7 @@ void MainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, flo
     }
 }
 
-void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor, half specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
+void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor, half specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
 {
     int pixelLightCount = GetAdditionalLightsCount();
     for (int i = 0; i < pixelLightCount; i++) 
@@ -252,7 +251,7 @@ void AdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor
     }
 }
 
-void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, RayPayload rayPayload, inout float3 reflection)
+void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, RayPayload rayPayload, inout float3 reflection)
 {
     RayDesc reflectRay;
     reflectRay.Origin = worldPos;
@@ -265,7 +264,6 @@ void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, R
     reflectPayload.randomSeed = rayPayload.randomSeed;
     reflectPayload.depth = rayPayload.depth + 1;
     reflectPayload.dist = rayPayload.dist;
-    //reflectPayload.lastPos = worldPos;
     reflectPayload.data = 0;
 
     TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
@@ -273,7 +271,7 @@ void ReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength, R
     reflection = reflectPayload.color*reflectStrength*_Intensity;
 }
 
-void IndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPayload rayPayload, inout half3 indirect)
+void RayIndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPayload rayPayload, inout half3 indirect)
 {
     indirect = 0;
     int maxSamples = _maxIndirectDepth;
@@ -282,7 +280,6 @@ void IndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPa
     while(samples > 0)
     {
         half3 randomVector = half3(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
-        //rayPayload.randomSeed += 1;
 
         float3 scatterRayDir = normalize(worldNormal+randomVector);
 
@@ -291,28 +288,23 @@ void IndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPa
         rayDesc.Direction = scatterRayDir;
         rayDesc.TMin = 0.001;
         rayDesc.TMax = 3;
-
-        // Create and init the scattered payload
+        
         RayPayload scatterRayPayload;
         scatterRayPayload.color = 0;
         scatterRayPayload.randomSeed = rayPayload.randomSeed;
         scatterRayPayload.depth = rayPayload.depth + 1;			
         scatterRayPayload.dist = rayPayload.dist;
-        //scatterRayPayload.lastPos = worldPos;
         scatterRayPayload.data = 0x2;
-
-        // shoot scattered ray
+        
         TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, rayDesc, scatterRayPayload);
         
-        //dist = scatterRayPayload.dist - rayPayload.dist;
-
         indirect += (scatterRayPayload.color*ambient)/maxSamples;
 
         samples--;			
     }
 }
 
-void TransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float refraction, RayPayload rayPayload, inout float4 color, inout float3 reflect)
+void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float refraction, RayPayload rayPayload, inout float4 color, inout float3 reflect)
 {
     float3 rayDir = WorldRayDirection();
     RayDesc transparentRay;
@@ -320,60 +312,14 @@ void TransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float refr
     int flags = RAY_FLAG_FORCE_NON_OPAQUE;
 
     #ifdef USE_REFRACTION
+        float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction/4.0+1) : refraction/4.0+1;
 
-        //float fakeThickness = _FakeThickness/10.0f;
-        /*#ifdef _HasFakeThickness
-            bool frontFace = dot(rayDir, worldNormal) <= 0.0;
+        float3 n = dot(worldNormal, rayDir) <= 0.0 ? worldNormal : -worldNormal;
 
-            if(frontFace)
-            {
-                float3 dir = refract(rayDir, worldNormal, 1 / (refraction/4.0+1));
-
-                float3 newPos = worldPos + dir*fakeThickness;
-
-                transparentRay.Origin = newPos;
-                transparentRay.Direction = refract(dir, worldNormal, (refraction/4.0+1));
-            }
-            else
-            {
-                float3 newPos = worldPos - worldNormal*fakeThickness;
-
-                float3 dir = refract(normalize(rayDir), worldNormal, 1 /(refraction/4.0+1));
-
-                newPos = newPos + dir*fakeThickness;
-
-                transparentRay.Origin = newPos;
-                transparentRay.Direction = refract(dir, worldNormal, (refraction/4.0+1));
-            }
-        #else */
-            float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction/4.0+1) : refraction/4.0+1;
-
-            float3 n = dot(worldNormal, rayDir) <= 0.0 ? worldNormal : -worldNormal;
-
-            transparentRay.Origin = worldPos;
-            transparentRay.Direction = refract(normalize(rayDir), n, currentIoR);
-        //#endif
+        transparentRay.Origin = worldPos;
+        transparentRay.Direction = refract(normalize(rayDir), n, currentIoR);
     #else    
-        /*#ifdef _HasFakeThickness
-            bool frontFace = dot(rayDir, worldNormal) <= 0.0;
-            if(!frontFace)
-            {
-                float3 newPos = worldPos - worldNormal*fakeThickness;
-
-                newPos = newPos + rayDir*fakeThickness;
-
-                transparentRay.Origin = newPos;
-            }
-            else
-            {
-                float3 newPos = worldPos + rayDir*fakeThickness;
-
-                transparentRay.Origin = newPos;
-            }
-        #else*/
-            transparentRay.Origin = worldPos;
-        //#endif
-        
+        transparentRay.Origin = worldPos;        
         transparentRay.Direction = normalize(rayDir);
     #endif
         
@@ -389,7 +335,6 @@ void TransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float refr
     transPayload.randomSeed = rayPayload.randomSeed;
     transPayload.depth = rayPayload.depth + 1;
     transPayload.dist = rayPayload.dist;
-    //transPayload.lastPos = worldPos;
     transPayload.data = 0;
 
     TraceRay(_RaytracingAccelerationStructure, flags, 0xFF, 0, 1, 0, transparentRay, transPayload);
