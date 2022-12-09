@@ -109,11 +109,13 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
     half3 indirect = _GlossyEnvironmentColor.xyz;
     float3 diffuse = 0;
 
+    float specularLuminance = Luminance(specColor);
+
     #ifndef UNLIT				//currently not converting to lumenencse do that pls
-        RayMainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+        RayMainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specularLuminance, rayPayload, shadowFactor, specular, diffuse);
 
         #ifndef  DISABLE_ADDITIONAL_LIGHTS
-            RayAdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specColor, rayPayload, shadowFactor, specular, diffuse);
+            RayAdditionalLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specularLuminance, rayPayload, shadowFactor, specular, diffuse);
         #endif
     #else
         diffuse = 1;

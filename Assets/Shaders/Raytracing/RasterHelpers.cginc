@@ -32,6 +32,11 @@ inline half3 DecodeHDR (half4 data, half4 decodeInstructions)
 	#endif
 }
 
+float Luminance(float3 color)
+{
+    return dot(color, float3(0.2126, 0.7152, 0.0722));
+}
+
 void BlinnPhongCalc(half3 lightDir, half3 worldNormal, half3 viewDir, half specularFactor, float specularStrength, inout float3 specular)
 {
 	float3 halfDir = normalize(lightDir + viewDir);
@@ -46,7 +51,7 @@ void MainLightCalc(float3 worldNormal, half3 viewDir, half specularFactor, float
     float facing = max(dot(lightDir, worldNormal), 0);  
     float shadowAmount = 1;
 
-    float lightStrength = mainLight.distanceAttenuation*dot(mainLight.color, float3(0.2126, 0.7152, 0.0722));
+    float lightStrength = mainLight.distanceAttenuation*Luminance(mainLight.color);
 
     if(mainLight.distanceAttenuation >= 0)
     {

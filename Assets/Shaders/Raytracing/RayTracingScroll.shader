@@ -22,8 +22,6 @@ Shader "RayTracing/DxrScroll"
 		
 		_Reflection ("Reflection", Range(0, 1)) = 0
         _Refraction ("Refraction", Range(0, 10)) = 0
-        
-        //_Metallic ("Metallic", float) = 0
 		
 		[Space(20)]
 		
@@ -39,7 +37,6 @@ Shader "RayTracing/DxrScroll"
         [Toggle(UNLIT)]_Unlit("Unlit", Float) = 0
         [Toggle(DISABLE_ADDITIONAL_LIGHTS)]_DisableAdditionalLights ("DisableAdditionalLights", Float) = 0
         [Toggle(CAST_DROP_SHADOW)]_CastDropShadow("CastDropShadow", Float) = 0        
-        //_FakeThickness ("FakeThickness", Range(0, 1)) = 0
 
         _ScrollSpeed("ScrollSpeed", float) = 1
         _ScrollDir("ScrollDirection", Vector) = (0, 1, 0)
@@ -57,11 +54,9 @@ Shader "RayTracing/DxrScroll"
 		{
             Tags{ "LightMode" = "UniversalForward" }
 
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
+			HLSLPROGRAM
 			#include "SimpleLit.cginc"
-			ENDCG
+			ENDHLSL
 		}
 
 		// ray tracing pass

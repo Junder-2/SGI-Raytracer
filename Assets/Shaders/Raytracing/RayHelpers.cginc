@@ -64,6 +64,11 @@ bool RayShouldReflect(float reflection, RayPayload rayPayload)
     return shouldReflect;
 }
 
+float Luminance(float3 color)
+{
+    return dot(color, float3(0.2126, 0.7152, 0.0722));
+}
+
 float RayCalcLOD(Texture2D tex, IntersectionVertex vertex)
 {
     float pixelHeight = 0; float pixelWidth = 0;
@@ -110,7 +115,7 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
     float facing = max(dot(lightDir, worldNormal), 0);  
     float shadowAmount = 1;
 
-    float lightStrength = mainLight.distanceAttenuation*dot(mainLight.color, float3(0.2126, 0.7152, 0.0722));
+    float lightStrength = mainLight.distanceAttenuation*Luminance(mainLight.color);
 
     if(mainLight.distanceAttenuation >= 0)
     {
@@ -184,7 +189,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
         float3 lightDir = light.direction;
         float facing = max((dot(lightDir, worldNormal)), 0);
 
-        float lightStrength = light.distanceAttenuation*dot(light.color, float3(0.2126, 0.7152, 0.0722));
+        float lightStrength = light.distanceAttenuation*Luminance(light.color);
         float shadowAmount = 1;
 
         float currLightAmount = 0;
@@ -312,7 +317,7 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
     int flags = RAY_FLAG_FORCE_NON_OPAQUE;
 
     #ifdef USE_REFRACTION
-        float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction/4.0+1) : refraction/4.0+1;
+        float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction*.25+1) : refraction*.25+1;
 
         float3 n = dot(worldNormal, rayDir) <= 0.0 ? worldNormal : -worldNormal;
 

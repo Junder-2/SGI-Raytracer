@@ -69,13 +69,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6feb5ce32c664cc40af6171d60845394, type: 3}
   m_Name: Raytracing
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   Enable:
     m_OverrideState: 1
     m_Value: 1
   UseSkybox:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   CullBackfaces:
     m_OverrideState: 1
     m_Value: 0

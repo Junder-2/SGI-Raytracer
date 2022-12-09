@@ -98,16 +98,18 @@ float4 frag(v2f i) : SV_Target
 	half3 indirect = _GlossyEnvironmentColor.xyz;
 	float3 diffuse = 0;	
 
-	float3 color = _Color*_MainTex.Sample(sampler_MainTex, i.uv);
+	float3 color = _Color*_MainTex.Sample(sampler_MainTex, i.uv)*_Intensity;
 	float3 specColor = _SpecularColor*_SpecularMap.Sample(sampler_SpecularMap, i.uv).rgb;
 
-	MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, _SpecularStrength*specColor, shadowFactor, specular, diffuse);
+	float specularLuminance = Luminance(specColor);
 
-	half3 reflectColor = 0;
+	MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, _SpecularStrength*specularLuminance, shadowFactor, specular, diffuse);
+
+	half3 reflectColor = color.xyz;
 	#ifdef USE_REFLECTIONS
-	half3 reflection = reflect(-i.viewdir, normalDirection);
-	half4 skyData = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflection, 0);
-	reflectColor = DecodeHDR (skyData, unity_SpecCube0_HDR)*_Reflection*specColor;
+		half3 reflection = reflect(-i.viewdir, normalDirection);
+		half4 skyData = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflection, 0);
+		reflectColor = DecodeHDR (skyData, unity_SpecCube0_HDR)*_Reflection*specColor*_Intensity;
 	#endif	
 	
 	float3 lightFinal = float3(lerp(color.xyz, reflectColor, _Reflection)*(diffuse+indirect));
