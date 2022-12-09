@@ -113,7 +113,7 @@ float4 frag(v2f i) : SV_Target
 	#endif	
 	
 	float3 lightFinal = float3(lerp(color.xyz, reflectColor, _Reflection)*(diffuse+indirect));
-	lightFinal += float3(specular*_SpecularColor);
+	lightFinal += float3(specular*specColor);
 	lightFinal *= float3(saturate(shadowFactor+indirect));
 
 	return float4(lightFinal, 1);

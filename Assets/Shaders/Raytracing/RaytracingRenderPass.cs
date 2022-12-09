@@ -107,6 +107,9 @@ public class RaytracingRenderPass : ScriptableRenderPass
         
         _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraToWorld", camera.cameraToWorldMatrix);
         _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
+        float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*camera.fieldOfView)*.5f))/camera.scaledPixelHeight);
+        Debug.Log(pixelSpreadAngle);
+        _command.SetRayTracingFloatParam(rayTracingShader, "_PixelSpreadAngle", pixelSpreadAngle);
 
         _command.SetRayTracingIntParam(rayTracingShader, "_FrameIndex", Mathf.FloorToInt(_frameIndex));
         _command.SetRayTracingVectorParam(rayTracingShader, "bottomColor", m_rayTracing.floorColor.GetValue<Color>());
@@ -132,9 +135,6 @@ public class RaytracingRenderPass : ScriptableRenderPass
         Shader.SetGlobalInteger("_halfTraceReflections", m_rayTracing.HalfTraceReflections.GetValue<bool>() ? 1 : 0);
         Shader.SetGlobalInteger("_cullShadowBackfaces", m_rayTracing.DoubleSidedShadows.GetValue<bool>() ? 0 : 1);
         Shader.SetGlobalFloat("_sunSpread", m_rayTracing.SunSpread.GetValue<float>()+1);
-
-        float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*camera.fieldOfView)/2f))/camera.scaledPixelHeight);
-        Shader.SetGlobalFloat("surfaceSpreadAngle", pixelSpreadAngle);
     }
 
     void Render(ref RenderingData renderingData)

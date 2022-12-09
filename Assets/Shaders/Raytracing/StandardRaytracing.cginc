@@ -69,34 +69,21 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
 
     float3 rayOrigin = WorldRayOrigin();
     float3 rayDir = WorldRayDirection();
-    float3 worldPos = rayOrigin + RayTCurrent()* rayDir;   
+    float3 worldPos = rayOrigin + RayTCurrent()* rayDir;
 
-    float dist = distance(rayOrigin, worldPos);
-    rayPayload.dist = dist;
-
-    rayPayload.rayConeWidth += rayPayload.rayConeSpreadAngle*dist;
-
-    float pixelHeight = 0; float pixelWidth = 0;
-    _MainTex.GetDimensions(pixelWidth, pixelHeight);
-    pixelWidth *= _MainTex_ST.x;
-    pixelHeight *= _MainTex_ST.y;
+    rayPayload.rayConeWidth += rayPayload.rayConeSpreadAngle*RayTCurrent();
             
-    float LOD = log2((currentvertex.texCoord0Area*pixelWidth*pixelHeight)/currentvertex.triangleArea)*.5;
-    LOD += log2 (abs(rayPayload.rayConeWidth));
-    LOD += 0.5 * log2 (pixelWidth * pixelHeight);
-    LOD -= log2(abs(dot(rayDir , worldNormal)));
-
-    LOD = max(log2(LOD)-LODbias, 0);
+    float LOD = RayCalcLOD(_MainTex, currentvertex, rayPayload.rayConeWidth, rayDir, worldNormal);
 
     float4 color = _Color*_MainTex.SampleLevel(sampler_MainTex, uv, LOD);
     #ifdef USE_ALPHA
-    float alpha = color.w;
+        float alpha = color.w;
     #else
-    float alpha = 1;
+        float alpha = 1;
     #endif
     color = color*_Intensity;
 
-    float3 specColor = _SpecularColor*_SpecularMap.SampleLevel(sampler_SpecularMap, uv, LOD);
+    float3 specColor = _SpecularColor*_SpecularMap.SampleLevel(sampler_SpecularMap, uv, LOD).rgb;
 
     #ifdef USE_NORMALMAP
         float4 tangentNormal = _NormalMap.SampleLevel(sampler_NormalMap, uv, LOD);               
@@ -111,7 +98,7 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
 
     float specularLuminance = Luminance(specColor);
 
-    #ifndef UNLIT				//currently not converting to lumenencse do that pls
+    #ifndef UNLIT
         RayMainLightCalc(worldNormal, worldPos, _SpecularFactor, _SpecularStrength*specularLuminance, rayPayload, shadowFactor, specular, diffuse);
 
         #ifndef  DISABLE_ADDITIONAL_LIGHTS
@@ -130,12 +117,12 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
     float3 reflectionColor = color.xyz;				
 
     #ifdef USE_REFLECTIONS
-    float3 reflectDir = reflect(rayDir, worldNormal); 
-			
-    bool shouldReflect = false;
+        float3 reflectDir = reflect(rayDir, worldNormal); 
+			    
+        bool shouldReflect = false;
 
-    if(RayShouldReflect(_Reflection, rayPayload))
-        RayReflectionCalc(worldPos, reflectDir, _Reflection*specColor, rayPayload, reflectionColor);                             
+        if(RayShouldReflect(_Reflection, rayPayload))
+            RayReflectionCalc(worldPos, reflectDir, _Reflection*specColor, rayPayload, reflectionColor);                             
     #endif
 
     if(rayPayload.depth < 1 && _maxIndirectDepth != 0)

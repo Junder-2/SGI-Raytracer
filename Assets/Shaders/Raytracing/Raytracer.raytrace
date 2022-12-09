@@ -5,6 +5,7 @@
 
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
+float _PixelSpreadAngle;
 
 bool _cullBackfaces;
 bool _useSkyBox;
@@ -52,12 +53,11 @@ void Raytracer()
     payload.color = float4(0, 0, 0, 0);
     payload.randomSeed = seed;
 	payload.depth = 0;
-    payload.dist = 0.01;
     //payload.lastPos = _WorldSpaceCameraPos;
     payload.frameIndex = dispatchId.x+dispatchId.y+(_FrameIndex % 2 ? 1 : 0);
     payload.data = 0;
 
-    payload.rayConeSpreadAngle = surfaceSpreadAngle;
+    payload.rayConeSpreadAngle = _PixelSpreadAngle;
     payload.rayConeWidth = 0;
 
     uint flags = RAY_FLAG_FORCE_NON_OPAQUE;

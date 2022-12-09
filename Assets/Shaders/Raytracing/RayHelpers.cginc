@@ -65,18 +65,25 @@ bool RayShouldReflect(float reflection, RayPayload rayPayload)
 }
 
 float Luminance(float3 color)
-{
+{    
     return dot(color, float3(0.2126, 0.7152, 0.0722));
 }
 
-float RayCalcLOD(Texture2D tex, IntersectionVertex vertex)
+float RayCalcLOD(Texture2D tex, IntersectionVertex vertex, float coneWidth, float3 rayDir, float3 normal)
 {
-    float pixelHeight = 0; float pixelWidth = 0;
+    float pixelHeight = 0, pixelWidth = 0;
+
+    float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
+    float texCoordArea = vertex.texCoord0Area;
+    float triangleArea = vertex.triangleArea;
     
     tex.GetDimensions(pixelWidth, pixelHeight);
-    float lambda = log2((vertex.texCoord0Area*pixelWidth*pixelHeight)/vertex.triangleArea)*.5;
+    float lambda = log2(texCoordArea/triangleArea)*.5;    
+    lambda += log2(abs(coneWidth));
+    lambda -= log2(abs(dot(rayDir, normal)));
+    lambda += log2(pixelWidth*pixelHeight)*.5;
 
-    return lambda;
+    return lambda-1.5;
 }
 
 void RayCalcNormalMap(float4 tangentNormal, float normalStrength, IntersectionVertex currentvertex, inout float3 worldNormal)
@@ -171,7 +178,7 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
         #endif
 
 
-        diffuse += mainLight.color*mainLight.distanceAttenuation;//*shadowAmount;    
+        diffuse += mainLight.color*mainLight.distanceAttenuation;  
 
         if(rayPayload.depth < _maxReflectDepth+1 && facing != 0)
         {
@@ -268,7 +275,6 @@ void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength
     reflectPayload.color = 0;
     reflectPayload.randomSeed = rayPayload.randomSeed;
     reflectPayload.depth = rayPayload.depth + 1;
-    reflectPayload.dist = rayPayload.dist;
     reflectPayload.data = 0;
 
     TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
@@ -298,7 +304,6 @@ void RayIndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout Ra
         scatterRayPayload.color = 0;
         scatterRayPayload.randomSeed = rayPayload.randomSeed;
         scatterRayPayload.depth = rayPayload.depth + 1;			
-        scatterRayPayload.dist = rayPayload.dist;
         scatterRayPayload.data = 0x2;
         
         TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, rayDesc, scatterRayPayload);
@@ -339,7 +344,6 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
     transPayload.color = 0;
     transPayload.randomSeed = rayPayload.randomSeed;
     transPayload.depth = rayPayload.depth + 1;
-    transPayload.dist = rayPayload.dist;
     transPayload.data = 0;
 
     TraceRay(_RaytracingAccelerationStructure, flags, 0xFF, 0, 1, 0, transparentRay, transPayload);
@@ -361,3 +365,12 @@ if(length(normalize(currentvertex.normalOS) - normalize(currentvertex.rawnormalO
 //    worldNormal = -worldNormal;
 
 float3 correctedPos = worldPos + normalLength*worldNormal;*/
+
+/* old lod method
+    float LOD = log2((currentvertex.texCoord0Area*pixelWidth*pixelHeight)/currentvertex.triangleArea)*.5;
+    LOD += log2 (abs(rayPayload.rayConeWidth));
+    LOD += 0.5 * log2 (pixelWidth * pixelHeight);
+    LOD -= log2(abs(dot(rayDir , worldNormal)));
+
+    LOD = max(log2(LOD)-LODbias, 0);
+*/

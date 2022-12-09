@@ -34,8 +34,6 @@ uniform bool _useDropShadows;
 
 uniform float _sunSpread;
 
-uniform float surfaceSpreadAngle;
-
 // compute random seed from one input
 // http://reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
 uint initRand(uint seed)
@@ -83,7 +81,6 @@ struct RayPayload
 	uint randomSeed;
 	// Recursion depth
 	uint depth;
-	float dist;
 	uint frameIndex;
 	uint data;
 
@@ -168,6 +165,11 @@ void GetCurrentIntersectionVertex(AttributeData attributeData, out IntersectionV
 	outVertex.texCoord2  = INTERPOLATE_RAYTRACING_ATTRIBUTE(v0.texCoord2, v1.texCoord2, v2.texCoord2, barycentricCoordinates);
 	outVertex.texCoord3  = INTERPOLATE_RAYTRACING_ATTRIBUTE(v0.texCoord3, v1.texCoord3, v2.texCoord3, barycentricCoordinates);
 	outVertex.color      = INTERPOLATE_RAYTRACING_ATTRIBUTE(v0.color, v1.color, v2.color, barycentricCoordinates);
+
+	float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
+	v0.positionOS = mul(objectToWorld, v0.positionOS);
+	v1.positionOS = mul(objectToWorld, v1.positionOS);
+	v2.positionOS = mul(objectToWorld, v2.positionOS);
 
 	// Compute the lambda value (area computed in object space)
 	outVertex.triangleArea  = length(cross(v1.positionOS - v0.positionOS, v2.positionOS - v0.positionOS));
