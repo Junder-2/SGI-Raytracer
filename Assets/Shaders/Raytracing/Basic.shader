@@ -37,21 +37,29 @@ Shader "RayTracing/DxrDiffuse"
         [Toggle(UNLIT)]_Unlit("Unlit", Float) = 0
         [Toggle(DISABLE_ADDITIONAL_LIGHTS)]_DisableAdditionalLights ("DisableAdditionalLights", Float) = 0
         [Toggle(CAST_DROP_SHADOW)]_CastDropShadow("CastDropShadow", Float) = 0
+		
+		[HideInInspector] _Cull("Cull mode", Float) = 2 // 2 is "Back"
+		[HideInInspector] _SourceBlend("Source blend", Float) = 0
+        [HideInInspector] _DestBlend("Destination blend", Float) = 0
+        [HideInInspector] _ZWrite("ZWrite", Float) = 0
 	}
 
     CustomEditor "DXRShaderEditor"
 
 	SubShader
 	{
-		Tags { "RenderType"="Opaque"}
-		LOD 100
+		Tags {"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
 
 		// basic rasterization pass that will allow us to see the material in SceneView
 		Pass
 		{
-            Tags{ "LightMode" = "UniversalForward" }
-
-			HLSLPROGRAM
+			Tags{ "LightMode" = "UniversalForward"}
+			
+			Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			
+            HLSLPROGRAM
 			
 			#include "SimpleLit.cginc"
 			ENDHLSL

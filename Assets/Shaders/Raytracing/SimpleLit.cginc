@@ -1,7 +1,7 @@
 #pragma vertex vert
 #pragma fragment frag
 
-#pragma shader_feature_local _ USE_ALPHA
+#pragma shader_feature_local _ USE_ALPHACLIP
 #pragma shader_feature_local _ USE_REFLECTIONS 
 #pragma shader_feature_local _ USE_NORMALMAP            
 #pragma shader_feature_local _ DISABLE_ADDITIONAL_LIGHTS
@@ -48,6 +48,8 @@ CBUFFER_START(UnityPerMaterial)
 	                
 	float _SpecularStrength = 1;
 	half _SpecularFactor = 60;
+
+	float _AlphaClip = 0;
 CBUFFER_END
 
 
@@ -90,20 +92,35 @@ float4 frag(v2f i) : SV_Target
 		// finally we got a normal vector from the normal map
 		normalDirection = mul(TBN, tangentNormal);
 	#endif
-
-	
 	
 	float3 specular = 0;
 	half shadowFactor = 0;
 	half3 indirect = _GlossyEnvironmentColor.xyz;
 	float3 diffuse = 0;	
 
-	float3 color = _Color*_MainTex.Sample(sampler_MainTex, i.uv)*_Intensity;
+	float4 color = _Color*_MainTex.Sample(sampler_MainTex, i.uv);
+	float alpha = color.a;
+	#ifdef USE_ALPHACLIP
+		clip(alpha - _AlphaClip);
+	#endif
+	
+	color = color*_Intensity;
+	
 	float3 specColor = _SpecularColor*_SpecularMap.Sample(sampler_SpecularMap, i.uv).rgb;
 
 	float specularLuminance = Luminance(specColor);
 
-	MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, _SpecularStrength*specularLuminance, shadowFactor, specular, diffuse);
+	#ifndef UNLIT
+		MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, _SpecularStrength*specularLuminance, shadowFactor, specular, diffuse);
+		#ifndef  DISABLE_ADDITIONAL_LIGHTS
+			
+		#endif
+	#else
+		diffuse = 1;
+		shadowFactor = 1;
+	#endif
+
+	
 
 	half3 reflectColor = color.xyz;
 	#ifdef USE_REFLECTIONS
@@ -116,5 +133,5 @@ float4 frag(v2f i) : SV_Target
 	lightFinal += float3(specular*specColor);
 	lightFinal *= float3(saturate(shadowFactor+indirect));
 
-	return float4(lightFinal, 1);
+	return float4(lightFinal, alpha);
 }

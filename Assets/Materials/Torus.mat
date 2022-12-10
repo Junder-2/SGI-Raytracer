@@ -25,8 +25,9 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -108,6 +109,7 @@ Material:
     - _Cull: 2
     - _CullBackfaces: 1
     - _Cutoff: 0.5
+    - _DestBlend: 0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DisableAdditionalLights: 0
@@ -132,6 +134,7 @@ Material:
     - _ShadowOffset: 0.1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
+    - _SourceBlend: 1
     - _SpecularFactor: 60
     - _SpecularHighlights: 1
     - _SpecularPower: 60

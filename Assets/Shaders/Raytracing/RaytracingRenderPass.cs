@@ -108,7 +108,6 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraToWorld", camera.cameraToWorldMatrix);
         _command.SetRayTracingMatrixParam(rayTracingShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
         float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*camera.fieldOfView)*.5f))/camera.scaledPixelHeight);
-        Debug.Log(pixelSpreadAngle);
         _command.SetRayTracingFloatParam(rayTracingShader, "_PixelSpreadAngle", pixelSpreadAngle);
 
         _command.SetRayTracingIntParam(rayTracingShader, "_FrameIndex", Mathf.FloorToInt(_frameIndex));

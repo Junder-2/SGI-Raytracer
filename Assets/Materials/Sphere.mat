@@ -12,17 +12,21 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _UseReflections
-  - _UseRefraction
+  - RECEIVE_SHADOWS
+  - USE_REFLECTIONS
+  - USE_REFRACTION
   m_InvalidKeywords:
   - _ReflectionOverride_OFF
   - _UseAlpha_OFF
   - _UseNormalMap_OFF
+  - _UseReflections
+  - _UseRefraction
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -115,9 +119,10 @@ Material:
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _ColorMask: 15
-    - _Cull: 2
+    - _Cull: 0
     - _CullBackfaces: 0
     - _Cutoff: 0.5
+    - _DestBlend: 0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DisableAdditionalLights: 0
@@ -142,6 +147,7 @@ Material:
     - _Shininess: 0.2
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
+    - _SourceBlend: 1
     - _SpecularFactor: 60
     - _SpecularHighlights: 1
     - _SpecularPower: 60
@@ -155,6 +161,7 @@ Material:
     - _StencilWriteMask: 255
     - _Strength: 0.2
     - _Surface: 0
+    - _Unlit: 0
     - _UseAlpha: 0
     - _UseUIAlphaClip: 0
     - _WorkflowMode: 1

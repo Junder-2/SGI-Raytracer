@@ -69,21 +69,27 @@ float Luminance(float3 color)
     return dot(color, float3(0.2126, 0.7152, 0.0722));
 }
 
-float RayCalcLOD(Texture2D tex, IntersectionVertex vertex, float coneWidth, float3 rayDir, float3 normal)
+float RayCalcLOD(IntersectionVertex vertex, float coneWidth, float3 rayDir, float3 normal)
 {
-    float pixelHeight = 0, pixelWidth = 0;
-
-    float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
     float texCoordArea = vertex.texCoord0Area;
     float triangleArea = vertex.triangleArea;
     
-    tex.GetDimensions(pixelWidth, pixelHeight);
     float lambda = log2(texCoordArea/triangleArea)*.5;    
     lambda += log2(abs(coneWidth));
     lambda -= log2(abs(dot(rayDir, normal)));
-    lambda += log2(pixelWidth*pixelHeight)*.5;
 
     return lambda-1.5;
+}
+
+float4 SampleTex2D(Texture2D tex, SamplerState sampler, float2 uv, float lod)
+{
+    float pixelHeight = 0, pixelWidth = 0;
+    tex.GetDimensions(pixelWidth, pixelHeight);
+    pixelWidth *= _MainTex_ST.x;
+    pixelHeight *= _MainTex_ST.y;
+    lod += log2(pixelWidth*pixelHeight)*.5;
+    
+    return tex.SampleLevel(sampler, uv, lod);
 }
 
 void RayCalcNormalMap(float4 tangentNormal, float normalStrength, IntersectionVertex currentvertex, inout float3 worldNormal)
