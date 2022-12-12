@@ -58,7 +58,7 @@ v2f vert(appdata v)
 	v2f o;
 
 	o.vertex = TransformObjectToHClip(v.vertex);
-	o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+	o.uv = CALCULATEUV;
 	o.viewdir = GetWorldSpaceViewDir(mul(unity_ObjectToWorld, v.vertex));	
 
 	// calc Normal, Binormal, Tangent vector in world space

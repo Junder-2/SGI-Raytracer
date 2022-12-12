@@ -10,12 +10,17 @@
 [shader("anyhit")]
 void anyHit (inout RayPayload rayPayload , AttributeData attributeData)
 {
-    #ifndef CAST_DROP_SHADOW
     uint rayFlags = RayFlags();
-
+    #ifndef CAST_DROP_SHADOW   
     if((rayFlags & DROPSHADOW_FLAG) == DROPSHADOW_FLAG)
         IgnoreHit();
     #endif
+
+    #ifndef CAST_SHADOWS
+    if((rayFlags & RAY_FLAG_FORCE_NON_OPAQUE) == RAY_FLAG_FORCE_NON_OPAQUE)
+        IgnoreHit();
+    #endif
+        
 
     #ifdef USE_ALPHA
     IntersectionVertex currentvertex;
@@ -35,12 +40,8 @@ void anyHit (inout RayPayload rayPayload , AttributeData attributeData)
 
     LOD = max(log2(LOD)-LODbias, 0);
 
-    half2 uv = TRANSFORM_TEX(currentvertex.texCoord0, _MainTex);
-    if(_ScrollSpeed != 0)
-    {
-        uv.x += _ScrollSpeed*_Time*.1f*normalize(_ScrollDir).x;
-        uv.y += _ScrollSpeed*_Time*.1f*normalize(_ScrollDir).y;
-    }
+    half2 uv = CALCULATEUV;
+    
     half alpha = (_Color*_MainTex.SampleLevel(sampler_MainTex, uv, LOD)).w;
 
     if(alpha <= _AlphaClip)
@@ -57,12 +58,7 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
     IntersectionVertex currentvertex;
     GetCurrentIntersectionVertex(attributeData, currentvertex);
 
-    float2 uv = TRANSFORM_TEX(currentvertex.texCoord0, _MainTex);
-    if(_ScrollSpeed != 0)
-    {
-        uv.x += _ScrollSpeed*_Time*.1f*normalize(_ScrollDir).x;
-        uv.y += _ScrollSpeed*_Time*.1f*normalize(_ScrollDir).y;
-    }   
+    float2 uv = CALCULATEUV;
 
     float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
     float3 worldNormal = normalize(mul(objectToWorld, currentvertex.normalOS));

@@ -1,5 +1,9 @@
 #include "Lights.hlsl"
 
+#ifndef CALCULATEUV
+#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex);
+#endif
+
 half3 UnpackScaleNormal(half4 packednormal, half bumpScale)
 {
 	#if defined(UNITY_NO_DXT5nm)
@@ -60,7 +64,7 @@ void MainLightCalc(float3 worldNormal, half3 viewDir, half specularFactor, float
     	currLightAmount = facing*lightStrength;
     	shadowFactor += currLightAmount;
 
-        diffuse += mainLight.color*mainLight.distanceAttenuation;    
+        diffuse += mainLight.color*mainLight.distanceAttenuation;
 
         if(facing != 0)
         {

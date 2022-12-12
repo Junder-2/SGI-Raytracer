@@ -7,39 +7,31 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Grounds
-  m_Shader: {fileID: 4800000, guid: 8a23dfb7a834a2445ab899a9ed3d483e, type: 3}
+  m_Name: FlipBook
+  m_Shader: {fileID: 4800000, guid: c5a2a914a959ca54bbe9ff18f79210b7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - CAST_SHADOWS
   - RECEIVE_SHADOWS
-  - REFLECTION_OVERRIDE
-  - USE_NORMALMAP
-  - USE_REFLECTIONS
-  - USE_REFRACTION
+  - USE_ALPHA
+  - USE_ALPHACLIP
   m_InvalidKeywords:
-  - _RECEIVESHADOWS_ON
-  - _REFLECTIONOVERRIDE_ON
-  - _ReflectionOverride
-  - _UseAlpha_OFF
-  - _UseNormalMap
-  - _UseReflections
-  - _UseRefraction
+  - _CULLBACKFACES_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 2450
   stringTagMap:
-    RenderType: Opaque
+    RenderType: TransparentCutout
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 10309, guid: 0000000000000000f000000000000000, type: 0}
-        m_Scale: {x: 5, y: 5}
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 0}
@@ -62,15 +54,15 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: daed53ee5454b6c4bb07d5d44d15e8bc, type: 3}
-        m_Scale: {x: 9, y: 5}
+        m_Texture: {fileID: 2800000, guid: 545cb36f5cbdd804e9521dc4e14bbea8, type: 3}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
-        m_Texture: {fileID: 2800000, guid: 6d72bb5300090204c93a2081a1aba5ac, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -86,7 +78,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SpecularMap:
-        m_Texture: {fileID: 2800000, guid: 406b8095d79e8a940bc217420d526199, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -101,19 +93,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    m_Ints: []
+    m_Ints:
+    - _Height: 2
+    - _Width: 2
     m_Floats:
-    - _AlphaClip: 0
+    - _AlphaClip: 0.5
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
-    - _BlendOp: 0
     - _BumpScale: 1
     - _CastDropShadow: 0
     - _CastShadows: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _Cull: 0
-    - _CullBackfaces: 0
+    - _Cull: 2
+    - _CullBackfaces: 1
     - _Cutoff: 0.5
     - _DestBlend: 0
     - _DetailAlbedoMapScale: 1
@@ -122,10 +115,11 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
-    - _FakeThickness: 0
+    - _FlipSpeed: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _Height: 2
     - _Intensity: 1
     - _Metallic: 0
     - _NormalStrength: 1
@@ -133,10 +127,9 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Reflection: 0.09
-    - _ReflectionOverride: 1
-    - _Refraction: 1
-    - _SampleGI: 0
+    - _Reflection: 0
+    - _ReflectionOverride: 0
+    - _Refraction: 0
     - _ScrollSpeed: 1
     - _ShadowOffset: 0
     - _Smoothness: 0.5
@@ -144,24 +137,25 @@ Material:
     - _SourceBlend: 1
     - _SpecularFactor: 60
     - _SpecularHighlights: 1
-    - _SpecularPower: 60
-    - _SpecularStrength: 1
+    - _SpecularStrength: 0.5
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
     - _Unlit: 0
-    - _UseAlpha: 0
+    - _UseAlpha: 1
+    - _Width: 3
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Dimensions: {r: 3, g: 2, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ScrollDir: {r: 1, g: 1, b: 0, a: 0}
-    - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
+    - _ScrollDir: {r: 0, g: 1, b: 0, a: 0}
+    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
---- !u!114 &4978535929413203938
+--- !u!114 &6432161246573822873
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

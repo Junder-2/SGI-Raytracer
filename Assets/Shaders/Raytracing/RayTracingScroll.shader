@@ -33,28 +33,43 @@ Shader "RayTracing/DxrScroll"
 		[Toggle]_CullBackfaces ("CullBackfaces", Float) = 1
         [Toggle(USE_ALPHA)]_UseAlpha ("UseAlpha", Float) = 0
         [Toggle(RECEIVE_SHADOWS)]_ReceiveShadows ("ReceiveShadows", Float) = 1
+		[Toggle(CAST_SHADOWS)]_CastShadows ("CastShadows", Float) = 1
         [Toggle(REFLECTION_OVERRIDE)]_ReflectionOverride ("ReflectionOverride", Float) = 0
         [Toggle(UNLIT)]_Unlit("Unlit", Float) = 0
         [Toggle(DISABLE_ADDITIONAL_LIGHTS)]_DisableAdditionalLights ("DisableAdditionalLights", Float) = 0
         [Toggle(CAST_DROP_SHADOW)]_CastDropShadow("CastDropShadow", Float) = 0        
 
         _ScrollSpeed("ScrollSpeed", float) = 1
-        _ScrollDir("ScrollDirection", Vector) = (0, 1, 0)
+        _ScrollDir("ScrollDirection", Vector) = (0, 1, 0, 0)
+		
+		[HideInInspector] _Cull("Cull mode", Float) = 2 // 2 is "Back"
+		[HideInInspector] _SourceBlend("Source blend", Float) = 0
+        [HideInInspector] _DestBlend("Destination blend", Float) = 0
+        [HideInInspector] _ZWrite("ZWrite", Float) = 0
 	}
 
     CustomEditor "DXRShaderEditor"
 
 	SubShader
 	{
-		Tags { "RenderType"="Opaque" }
-		LOD 100
+		Tags {"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
 
 		// basic rasterization pass that will allow us to see the material in SceneView
 		Pass
 		{
             Tags{ "LightMode" = "UniversalForward" }
-
+			
+			Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			
 			HLSLPROGRAM
+
+			float _ScrollSpeed = 0;
+			float2 _ScrollDir;
+
+			#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy		
+			
 			#include "SimpleLit.cginc"
 			ENDHLSL
 		}
@@ -68,6 +83,11 @@ Shader "RayTracing/DxrScroll"
 			HLSLPROGRAM
 
 			#pragma raytracing Raytracer
+
+			float _ScrollSpeed = 0;
+			float2 _ScrollDir;
+
+			#define CALCULATEUV TRANSFORM_TEX(currentvertex.texCoord0, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy				
 
 			#include "StandardRaytracing.cginc"
 

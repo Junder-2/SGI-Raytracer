@@ -95,8 +95,8 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 1
   IndirectSkyStrength:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.24
   MaxRefractions:
     m_OverrideState: 1
     m_Value: 4
@@ -113,6 +113,7 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}
   UpdateParameters: 1
+  UpdateCamera: 1
 --- !u!114 &6468538659464832847
 MonoBehaviour:
   m_ObjectHideFlags: 3

@@ -10,6 +10,7 @@ RaytracingAccelerationStructure  _RaytracingAccelerationStructure;
 
 #define RAYTRACING_OPAQUE_FLAG      0x0f
 #define RAYTRACING_TRANSPARENT_FLAG 0xf0
+#define SHADOWRAY_FLAG 0x100
 #define DROPSHADOW_FLAG 0x200
 
 #define EPSILON         1.0e-4

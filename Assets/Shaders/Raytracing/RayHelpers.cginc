@@ -27,14 +27,16 @@ CBUFFER_START(UnityPerMaterial)
                 
     float _SpecularStrength = 1;
     half _SpecularFactor = 60;
-
-    float _ScrollSpeed = 0;
-    float2 _ScrollDir;
 CBUFFER_END
 
 #pragma shader_feature_local _ RECEIVE_SHADOWS
+#pragma shader_feature_local _ CAST_SHADOWS
 #pragma shader_feature_local _ REFLECTION_OVERRIDE
 #pragma shader_feature_local _ USE_REFRACTION
+
+#ifndef CALCULATEUV
+#define CALCULATEUV TRANSFORM_TEX(currentvertex.texCoord0, _MainTex);
+#endif
 
 bool RayShouldReflect(float reflection, RayPayload rayPayload)
 {
@@ -257,7 +259,6 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
                 currLightAmount = facing*lightStrength;
                 shadowFactor += currLightAmount;
             #endif
-            
 
             diffuse += light.color*currLightAmount;
 
@@ -283,7 +284,7 @@ void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength
     reflectPayload.depth = rayPayload.depth + 1;
     reflectPayload.data = 0;
 
-    TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
+    TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
 
     reflection = reflectPayload.color*reflectStrength*_Intensity;
 }
@@ -312,7 +313,7 @@ void RayIndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout Ra
         scatterRayPayload.depth = rayPayload.depth + 1;			
         scatterRayPayload.data = 0x2;
         
-        TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_NON_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, rayDesc, scatterRayPayload);
+        TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_OPAQUE, RAY_FLAG_FORCE_OPAQUE, 0, 1, 0, rayDesc, scatterRayPayload);
         
         indirect += (scatterRayPayload.color*ambient)/maxSamples;
 
@@ -325,7 +326,7 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
     float3 rayDir = WorldRayDirection();
     RayDesc transparentRay;
 
-    int flags = RAY_FLAG_FORCE_NON_OPAQUE;
+    int flags = RAY_FLAG_FORCE_OPAQUE;
 
     #ifdef USE_REFRACTION
         float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction*.25+1) : refraction*.25+1;

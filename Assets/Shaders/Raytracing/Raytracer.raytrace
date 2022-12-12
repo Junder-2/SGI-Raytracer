@@ -60,7 +60,7 @@ void Raytracer()
     payload.rayConeSpreadAngle = _PixelSpreadAngle;
     payload.rayConeWidth = 0;
 
-    uint flags = RAY_FLAG_FORCE_NON_OPAQUE;
+    uint flags = RAY_FLAG_FORCE_OPAQUE;
 
     if(_cullBackfaces)
         flags |= RAY_FLAG_CULL_BACK_FACING_TRIANGLES; 
