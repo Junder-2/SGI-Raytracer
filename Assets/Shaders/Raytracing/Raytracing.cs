@@ -26,10 +26,12 @@ public class Raytracing : VolumeComponent, IPostProcessComponent
 
     public void RetrieveInstances(ref RayTracingAccelerationStructure accelerationStructure)
     {
+        accelerationStructure.ClearInstances();
+        
         foreach (var item in FindObjectsOfType<Renderer>())
         {
             if (item.rayTracingMode == RayTracingMode.Off) continue;
-            
+
             accelerationStructure.AddInstance(item);
             accelerationStructure.UpdateInstanceTransform(item);
         }

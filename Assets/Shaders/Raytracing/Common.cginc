@@ -10,30 +10,27 @@ RaytracingAccelerationStructure  _RaytracingAccelerationStructure;
 
 #define RAYTRACING_OPAQUE_FLAG      0x0f
 #define RAYTRACING_TRANSPARENT_FLAG 0xf0
-#define SHADOWRAY_FLAG 0x100
-#define DROPSHADOW_FLAG 0x200
+#define SHADOWRAY_FLAG 0x200
 
 #define EPSILON         1.0e-4
 
 // max recursion depth
 static const uint gMaxDepth = 3;
-static const uint gMaxReflectDepth = 3;
-static const uint gMaxIndirectDepth = 0;
-static const uint gMaxSpecularDepth = 3;
 
 static const float gShadowOffset = .05f;
 
 static const float LODbias = 1;
 
-uniform int _maxReflectDepth;
-uniform int _renderShadows;
-uniform bool _halfTraceReflections;
-uniform int _maxIndirectDepth;
-uniform int _maxRefractionDepth;
-uniform bool _cullShadowBackfaces;
-uniform bool _useDropShadows;
+uniform int gRenderShadows;
+uniform bool gHalfTraceReflections;
+uniform int gMaxReflectDepth;
+uniform int gMaxIndirectDepth;
+uniform int gMaxRefractionDepth;
+uniform bool gCullShadowBackfaces;
+uniform bool gUseDropShadows;
 
-uniform float _sunSpread;
+uniform int gClipDistance;
+uniform float gSunSpread;
 
 // compute random seed from one input
 // http://reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
@@ -204,12 +201,12 @@ bool ShadowRay(float3 origin, half3 direction, float Tmin, float Tmax, bool cull
 	ShadowHitInfo shadowPayload;
     shadowPayload.isHit = true;
 
-	uint flags = RAY_FLAG_FORCE_NON_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | bonusFlag;
+	uint flags = RAY_FLAG_FORCE_NON_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | SHADOWRAY_FLAG;
 
 	if(cullBackfaces)
 		flags |= RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
-    TraceRay(_RaytracingAccelerationStructure, flags, RAYTRACING_OPAQUE_FLAG, 0, 0, 1, shadowRay, shadowPayload);
+    TraceRay(_RaytracingAccelerationStructure, flags, 0xff, 0, 0, 1, shadowRay, shadowPayload);
     return (shadowPayload.isHit);
 }
 

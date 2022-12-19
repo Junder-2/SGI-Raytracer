@@ -42,6 +42,9 @@ CBUFFER_START(UnityPerMaterial)
 	float4 _NormalMap_ST;
 	SamplerState sampler_NormalMap;
 	float _NormalStrength;
+	Texture2D _AttributeMap;
+	float4 _AttributeMap_ST;
+	SamplerState sampler_AttributeMap;
 
 	float _Intensity = 1;
 	float _Reflection = 0;
@@ -106,12 +109,16 @@ float4 frag(v2f i) : SV_Target
 	
 	color = color*_Intensity;
 	
-	float3 specColor = _SpecularColor*_SpecularMap.Sample(sampler_SpecularMap, i.uv).rgb;
+	float4 specColor = _SpecularColor*_SpecularMap.Sample(sampler_SpecularMap, i.uv).rgba;
+	float specularStrength = _SpecularStrength*specColor.a;
 
-	float specularLuminance = Luminance(specColor);
+	float4 attributes = _AttributeMap.Sample(sampler_AttributeMap, i.uv).rgba;
+	float reflectance = attributes.r*_Reflection;
+	
+	float specularLuminance = Luminance(specColor.rgb);
 
 	#ifndef UNLIT
-		MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, _SpecularStrength*specularLuminance, shadowFactor, specular, diffuse);
+		MainLightCalc(normalDirection, i.viewdir, _SpecularFactor, specularStrength*specularLuminance, shadowFactor, specular, diffuse);
 		#ifndef  DISABLE_ADDITIONAL_LIGHTS
 			
 		#endif
@@ -126,11 +133,11 @@ float4 frag(v2f i) : SV_Target
 	#ifdef USE_REFLECTIONS
 		half3 reflection = reflect(-i.viewdir, normalDirection);
 		half4 skyData = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflection, 0);
-		reflectColor = DecodeHDR (skyData, unity_SpecCube0_HDR)*_Reflection*specColor*_Intensity;
+		reflectColor = DecodeHDR (skyData, unity_SpecCube0_HDR)*reflectance*specColor.rgb*_Intensity;
 	#endif	
 	
-	float3 lightFinal = float3(lerp(color.xyz, reflectColor, _Reflection)*(diffuse+indirect));
-	lightFinal += float3(specular*specColor);
+	float3 lightFinal = float3(lerp(color.xyz, reflectColor, reflectance)*(diffuse+indirect));
+	lightFinal += float3(specular*specColor.rgb);
 	lightFinal *= float3(saturate(shadowFactor+indirect));
 
 	return float4(lightFinal, alpha);

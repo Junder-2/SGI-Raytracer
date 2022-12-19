@@ -7,16 +7,16 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 float _PixelSpreadAngle;
 
-bool _cullBackfaces;
-bool _useSkyBox;
+bool _CullBackfaces;
+bool _UseSkyBox;
 
-RWTexture2D<float4> RenderTarget;
+RWTexture2D<float4> _RenderTarget;
 
 TextureCube<float3> g_EnvTex;
 SamplerState sampler_linear_repeat;
 
-float3 floorColor;
-float3 skyColor;
+float3 _BottomSkyColor;
+float3 _TopSkyColor;
 
 float _IndirectSkyStrength;
 
@@ -47,7 +47,7 @@ void Raytracer()
     ray.Origin = origin; 
     ray.Direction = direction; 
     ray.TMin = 0;
-    ray.TMax = 10000;
+    ray.TMax = gClipDistance;
 
     RayPayload payload;
     payload.color = float4(0, 0, 0, 0);
@@ -60,14 +60,14 @@ void Raytracer()
     payload.rayConeSpreadAngle = _PixelSpreadAngle;
     payload.rayConeWidth = 0;
 
-    uint flags = RAY_FLAG_FORCE_OPAQUE;
+    uint flags = 0;
 
-    if(_cullBackfaces)
+    if(_CullBackfaces)
         flags |= RAY_FLAG_CULL_BACK_FACING_TRIANGLES; 
 
     TraceRay(_RaytracingAccelerationStructure, flags, 0xFF, 0, 1, 0, ray, payload);
 
-    RenderTarget[dispatchId.xy] = payload.color;
+    _RenderTarget[dispatchId.xy] = payload.color;
 }
 
 [shader("miss")]
@@ -77,14 +77,14 @@ void MyMissShader(inout RayPayload payload : SV_RayPayload)
     
     if(param == 0)
     {
-        if(_useSkyBox)
+        if(_UseSkyBox)
         {
             payload.color = float4(g_EnvTex.SampleLevel(sampler_linear_repeat, WorldRayDirection(), 0), 1);
         }
         else
         {
             half3 rayDir = WorldRayDirection();
-            payload.color = float4(lerp(floorColor, skyColor, rayDir.y * 0.5f + 0.5f), 1);  
+            payload.color = float4(lerp(_BottomSkyColor, _TopSkyColor, rayDir.y * 0.5f + 0.5f), 1);  
         }             
     }
     else if(param == 0x1)
@@ -93,14 +93,14 @@ void MyMissShader(inout RayPayload payload : SV_RayPayload)
     }
     else if(param == 0x2)
     {
-        if(_useSkyBox)
+        if(_UseSkyBox)
         {
             payload.color = float4(g_EnvTex.SampleLevel(sampler_linear_repeat, WorldRayDirection(), 0)*_IndirectSkyStrength, 1);
         }
         else
         {
             half3 rayDir = WorldRayDirection();
-            payload.color = float4(lerp(floorColor, skyColor, rayDir.y * 0.5f + 0.5f)*_IndirectSkyStrength, 1);  
+            payload.color = float4(lerp(_BottomSkyColor, _TopSkyColor, rayDir.y * 0.5f + 0.5f)*_IndirectSkyStrength, 1);  
         }         
     }
 }
@@ -108,7 +108,7 @@ void MyMissShader(inout RayPayload payload : SV_RayPayload)
 [shader("miss")]
 void ShadowMiss(inout ShadowHitInfo hit : SV_RayPayload)
 { 
-    hit.isHit = false;
+    hit.isHit = 0;
 }
 
 // "back up" closest hit shader. it is used when we hit material without raytracing shader pass

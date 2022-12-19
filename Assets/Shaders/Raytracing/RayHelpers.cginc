@@ -15,8 +15,11 @@ CBUFFER_START(UnityPerMaterial)
     float4 _NormalMap_ST;
     SamplerState sampler_NormalMap;
     float _NormalStrength;
+    Texture2D _AttributeMap;
+    float4 _AttributeMap_ST;
+    SamplerState sampler_AttributeMap;
 
-    bool _CullBackfaces = false;
+    bool _DoubleSided = false;
     bool _Unlit = false;
     float _AlphaClip = 0;
     float _ShadowOffset = 0;
@@ -33,6 +36,7 @@ CBUFFER_END
 #pragma shader_feature_local _ CAST_SHADOWS
 #pragma shader_feature_local _ REFLECTION_OVERRIDE
 #pragma shader_feature_local _ USE_REFRACTION
+#pragma shader_feature_local _ DOUBLESIDED
 
 #ifndef CALCULATEUV
 #define CALCULATEUV TRANSFORM_TEX(currentvertex.texCoord0, _MainTex);
@@ -42,7 +46,7 @@ bool RayShouldReflect(float reflection, RayPayload rayPayload)
 {
     bool shouldReflect = false;
 
-    if(_maxReflectDepth == 0 || rayPayload.depth >= _maxReflectDepth)
+    if(gMaxReflectDepth == 0 || rayPayload.depth >= gMaxReflectDepth)
         return shouldReflect;
 
     #ifndef REFLECTION_OVERRIDE
@@ -50,7 +54,7 @@ bool RayShouldReflect(float reflection, RayPayload rayPayload)
             shouldReflect = true;
 
         else if(reflection > .35f)
-            shouldReflect = rayPayload.depth < max(_maxReflectDepth-1, 1);
+            shouldReflect = rayPayload.depth < max(gMaxReflectDepth-1, 1);
 
         else if(rayPayload.frameIndex % 2 == 0)
             shouldReflect = true;
@@ -58,9 +62,9 @@ bool RayShouldReflect(float reflection, RayPayload rayPayload)
         shouldReflect = true;
     #endif
 
-    if(_halfTraceReflections && rayPayload.frameIndex % 2 == 0 && shouldReflect)
+    if(gHalfTraceReflections && rayPayload.frameIndex % 2 == 0 && shouldReflect)
         shouldReflect = true;
-    else if(_halfTraceReflections)
+    else if(gHalfTraceReflections)
         shouldReflect = false;
 
     return shouldReflect;
@@ -118,7 +122,7 @@ void BlinnPhongCalc(half3 lightDir, half3 worldNormal, float3 worldPos, half spe
 
 void RayDropShadowRay(float3 worldPos, inout float shadowFactor)
 {
-    bool hit = ShadowRay(worldPos, half3(0, 1, 0), 3, 100, _cullShadowBackfaces, DROPSHADOW_FLAG);
+    bool hit = ShadowRay(worldPos, half3(0, 1, 0), 3, 100, gCullShadowBackfaces, 0);
 	
     shadowFactor *= (hit ? 0.0 : 1.0f);
 }
@@ -136,10 +140,10 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
     {
         float currLightAmount = 0;
         #ifdef RECEIVE_SHADOWS
-            if(_renderShadows != 0)
+            if(gRenderShadows != 0)
             {
                 shadowAmount = 0;
-                int maxSamples = _renderShadows;
+                int maxSamples = gRenderShadows;
                 int samples = maxSamples;
 
                 half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
@@ -150,22 +154,24 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
 
                 while(samples > 0)
                 {
-                    float3 samplePos = (worldPos+lightDir*100.0f);
-                    float sampleDist = (100.0f);
+                    float sampleDist = (gClipDistance*.1);
+                    
+                    float3 samplePos = (worldPos+lightDir*sampleDist);
+                    
                     half3 sampleDir = -lightDir;
 
-                    if(_renderShadows != 1)
+                    if(gRenderShadows != 1)
                     {
                         float2 randomVector = float2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
                         randomVector = normalize(randomVector) * saturate(length(randomVector));
 
-                        samplePos += perpX*randomVector.x*_sunSpread + perpY*randomVector.y*_sunSpread;
+                        samplePos += perpX*randomVector.x*gSunSpread + perpY*randomVector.y*gSunSpread;
 
                         sampleDist = length(samplePos - worldPos);
                         sampleDir = normalize(worldPos- samplePos);
                     }                           
 
-                    bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+                    bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), gCullShadowBackfaces, 0);
 
                     shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
                     
@@ -188,7 +194,7 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
 
         diffuse += mainLight.color*mainLight.distanceAttenuation;  
 
-        if(rayPayload.depth < _maxReflectDepth+1 && facing != 0)
+        if(rayPayload.depth < gMaxReflectDepth+1 && facing != 0)
         {
             BlinnPhongCalc(lightDir, worldNormal, worldPos, specularFactor, specularStrength*currLightAmount, specular);
         }
@@ -212,10 +218,10 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
         if(light.distanceAttenuation > 0)
         {
             #ifdef RECEIVE_SHADOWS
-                if(_renderShadows != 0)
+                if(gRenderShadows != 0)
                 {                
                     shadowAmount = 0;
-                    int maxSamples = _renderShadows;
+                    int maxSamples = gRenderShadows;
                     int samples = maxSamples;
 
                     half3 perpX = cross(-lightDir, half3(0.f, 1.0f, 0.f));
@@ -230,7 +236,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
                         float sampleDist = light.distance-gShadowOffset;
                         half3 sampleDir = -lightDir;
 
-                        if(_renderShadows != 1)
+                        if(gRenderShadows != 1)
                         {
                             half2 randomVector = half2(nextRand(rayPayload.randomSeed), nextRand(rayPayload.randomSeed)) * 2 - 1;
                             randomVector = normalize(randomVector) * saturate(length(randomVector));
@@ -240,7 +246,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
                             sampleDir = normalize(worldPos- samplePos);
                         }
 
-                        bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), _cullShadowBackfaces, 0);
+                        bool hit = ShadowRay(samplePos, sampleDir, .1f, (sampleDist-gShadowOffset-_ShadowOffset), gCullShadowBackfaces, 0);
 
                         shadowAmount += (hit ? 0.0 : 1.0f)/maxSamples;
                         
@@ -262,7 +268,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
 
             diffuse += light.color*currLightAmount;
 
-            if(rayPayload.depth < _maxReflectDepth+1 && facing != 0)
+            if(rayPayload.depth < gMaxReflectDepth+1 && facing != 0)
             {
                 BlinnPhongCalc(lightDir, worldNormal, worldPos, specularFactor, specularStrength*currLightAmount, specular);
             }
@@ -276,7 +282,7 @@ void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength
     reflectRay.Origin = worldPos;
     reflectRay.Direction = normalize(reflectDir);
     reflectRay.TMin = 0.001;
-    reflectRay.TMax = 100;
+    reflectRay.TMax = gClipDistance*.1;
 
     RayPayload reflectPayload;
     reflectPayload.color = 0;
@@ -284,7 +290,7 @@ void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength
     reflectPayload.depth = rayPayload.depth + 1;
     reflectPayload.data = 0;
 
-    TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_OPAQUE, RAYTRACING_OPAQUE_FLAG, 0, 1, 0, reflectRay, reflectPayload);
+    TraceRay(_RaytracingAccelerationStructure, 0, 0xff, 0, 1, 0, reflectRay, reflectPayload);
 
     reflection = reflectPayload.color*reflectStrength*_Intensity;
 }
@@ -292,7 +298,7 @@ void RayReflectionCalc(float3 worldPos, half3 reflectDir, float3 reflectStrength
 void RayIndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout RayPayload rayPayload, inout half3 indirect)
 {
     indirect = 0;
-    int maxSamples = _maxIndirectDepth;
+    int maxSamples = gMaxIndirectDepth;
     int samples = maxSamples;
 
     while(samples > 0)
@@ -313,7 +319,7 @@ void RayIndirectCalc(float3 worldPos, half3 worldNormal, half3 ambient, inout Ra
         scatterRayPayload.depth = rayPayload.depth + 1;			
         scatterRayPayload.data = 0x2;
         
-        TraceRay(_RaytracingAccelerationStructure, RAY_FLAG_FORCE_OPAQUE, RAY_FLAG_FORCE_OPAQUE, 0, 1, 0, rayDesc, scatterRayPayload);
+        TraceRay(_RaytracingAccelerationStructure, 0, 0xff, 0, 1, 0, rayDesc, scatterRayPayload);
         
         indirect += (scatterRayPayload.color*ambient)/maxSamples;
 
@@ -326,7 +332,7 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
     float3 rayDir = WorldRayDirection();
     RayDesc transparentRay;
 
-    int flags = RAY_FLAG_FORCE_OPAQUE;
+    int flags = RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
     #ifdef USE_REFRACTION
         float currentIoR = dot(rayDir, worldNormal) <= 0.0 ? 1 / (refraction*.25+1) : refraction*.25+1;
@@ -339,13 +345,9 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
         transparentRay.Origin = worldPos;        
         transparentRay.Direction = normalize(rayDir);
     #endif
-        
-
-    if(_CullBackfaces)
-        flags |= RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
     
     transparentRay.TMin = 0.001;
-    transparentRay.TMax = 100;
+    transparentRay.TMax = gClipDistance*.75;
 
     RayPayload transPayload;
     transPayload.color = 0;
@@ -353,7 +355,7 @@ void RayTransparentCalc(float alpha, float3 worldPos, half3 worldNormal, float r
     transPayload.depth = rayPayload.depth + 1;
     transPayload.data = 0;
 
-    TraceRay(_RaytracingAccelerationStructure, flags, 0xFF, 0, 1, 0, transparentRay, transPayload);
+    TraceRay(_RaytracingAccelerationStructure, flags, 0xff, 0, 1, 0, transparentRay, transPayload);
 
     color = float4(lerp(transPayload.color.xyz, color.xyz, alpha), 1);
     reflect = float3(lerp(transPayload.color.xyz, reflect, alpha));

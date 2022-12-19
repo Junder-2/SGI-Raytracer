@@ -20,6 +20,7 @@ Shader "RayTracing/DxrFlipBook"
 		
 		[Space(20)]
 		
+		_AttributeMap ("AttributeMap", 2D) = "white" {}
 		_Reflection ("Reflection", Range(0, 1)) = 0
         _Refraction ("Refraction", Range(0, 10)) = 0
 		
@@ -30,14 +31,13 @@ Shader "RayTracing/DxrFlipBook"
 		
 		[Space(20)]
 		
-		[Toggle]_CullBackfaces ("CullBackfaces", Float) = 1
+		[Toggle(DOUBLESIDED)]_DoubleSided ("Double Sided", Float) = 1
         [Toggle(USE_ALPHA)]_UseAlpha ("UseAlpha", Float) = 0
         [Toggle(RECEIVE_SHADOWS)]_ReceiveShadows ("ReceiveShadows", Float) = 1
 		[Toggle(CAST_SHADOWS)]_CastShadows ("CastShadows", Float) = 1
         [Toggle(REFLECTION_OVERRIDE)]_ReflectionOverride ("ReflectionOverride", Float) = 0
         [Toggle(UNLIT)]_Unlit("Unlit", Float) = 0
         [Toggle(DISABLE_ADDITIONAL_LIGHTS)]_DisableAdditionalLights ("DisableAdditionalLights", Float) = 0
-        [Toggle(CAST_DROP_SHADOW)]_CastDropShadow("CastDropShadow", Float) = 0        
 
         _FlipSpeed("Speed", Float) = 1
 		_Width("Width", float) = 1

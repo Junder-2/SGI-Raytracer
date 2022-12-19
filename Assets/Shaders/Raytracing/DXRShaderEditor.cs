@@ -13,7 +13,7 @@ public class DXRShaderEditor : ShaderGUI
     private static readonly int Refraction = Shader.PropertyToID("_Refraction");
     private static readonly int UseAlpha = Shader.PropertyToID("_UseAlpha");
     private static readonly int AlphaClip = Shader.PropertyToID("_AlphaClip");
-    private static readonly int CullBackfaces = Shader.PropertyToID("_CullBackfaces");
+    private static readonly int DoubleSided = Shader.PropertyToID("_DoubleSided");
     private static readonly int Cull = Shader.PropertyToID("_Cull");
 
     public override void ValidateMaterial(Material material)
@@ -42,7 +42,7 @@ public class DXRShaderEditor : ShaderGUI
     {
         bool useAlpha = material.GetFloat(UseAlpha) > 0;
         bool alphaClip = material.GetFloat(AlphaClip) > 0;
-        bool culling = material.GetFloat(CullBackfaces) > 0;
+        bool culling = material.GetFloat(DoubleSided) < 1;
 
         if (culling)
             material.SetInt(Cull, (int)CullMode.Back);

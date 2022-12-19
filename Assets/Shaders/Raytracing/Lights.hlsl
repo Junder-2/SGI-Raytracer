@@ -196,6 +196,6 @@ int GetAdditionalLightsCount()
     // in the culling. This way we could do the loop branch with an uniform
     // This would be helpful to support baking exceeding lights in SH as well
     return int(_AdditionalLightsCount.x); //prevents pop in
-    //return int(min(_AdditionalLightsCount.x, unity_LightData.y));
+    return int(min(_AdditionalLightsCount.x, unity_LightData.y));
 #endif
 }
