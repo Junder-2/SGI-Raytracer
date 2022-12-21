@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
@@ -37,5 +38,10 @@ public class RaytracingBlit : ScriptableRendererFeature
     public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
     {
         rayTracingPass.Setup(renderer.cameraColorTargetHandle);
+    }
+
+    private void OnDisable()
+    {
+        rayTracingPass.OnDisable();
     }
 }

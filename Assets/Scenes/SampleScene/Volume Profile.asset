@@ -76,14 +76,8 @@ MonoBehaviour:
   UseSkybox:
     m_OverrideState: 1
     m_Value: 1
-  CullBackfaces:
-    m_OverrideState: 1
-    m_Value: 0
-  DoubleSidedShadows:
-    m_OverrideState: 1
-    m_Value: 1
-  DropShadows:
-    m_OverrideState: 1
+  ForceDoubleSided:
+    m_OverrideState: 0
     m_Value: 0
   SunSpread:
     m_OverrideState: 0
@@ -103,9 +97,9 @@ MonoBehaviour:
   RaytracedShadows:
     m_OverrideState: 1
     m_Value: 1
-  HalfTraceReflections:
-    m_OverrideState: 0
-    m_Value: 0
+  ReflectionMode:
+    m_OverrideState: 1
+    m_Value: 3
   skyColor:
     m_OverrideState: 1
     m_Value: {r: 0.37467068, g: 0.37467068, b: 0.9150943, a: 1}

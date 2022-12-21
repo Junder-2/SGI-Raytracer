@@ -8,28 +8,26 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
     private RTHandle _currentTarget;
     private RenderTexture _resultTexture;
-    private readonly RayTracingShader rayTracingShader;
+    private readonly RayTracingShader _rayTracingShader;
     private Material _blendMat;
 
-    LayerMask _updateLayers;
+    private LayerMask _updateLayers;
 
     private static RayTracingAccelerationStructure _accelerationStructure;
-    Raytracing _raytracingVolume;
+    private Raytracing _raytracingVolume;
     private RayTracingInstanceCullingConfig _cullingConfig;
 
     private CommandBuffer _command;
 
-    float _frameIndex;
+    private float _frameIndex;
 
-    bool _init = false;
+    private bool _init = false;
     
     private static readonly int MaxReflectDepth = Shader.PropertyToID("gMaxReflectDepth");
     private static readonly int MaxIndirectDepth = Shader.PropertyToID("gMaxIndirectDepth");
     private static readonly int MaxRefractionDepth = Shader.PropertyToID("gMaxRefractionDepth");
     private static readonly int RenderShadows = Shader.PropertyToID("gRenderShadows");
-    private static readonly int UseDropShadows = Shader.PropertyToID("gUseDropShadows");
-    private static readonly int CullShadowBackfaces = Shader.PropertyToID("gCullShadowBackfaces");
-    private static readonly int HalfTraceReflections = Shader.PropertyToID("gHalfTraceReflections");
+    private static readonly int ReflectionMode = Shader.PropertyToID("gReflectionMode");
     private static readonly int ClipDistance = Shader.PropertyToID("gClipDistance");
     private static readonly int SunSpread = Shader.PropertyToID("gSunSpread");
     private static readonly int Tex = Shader.PropertyToID("_Tex");
@@ -51,7 +49,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
     {
         this._profilerTag = profilerTag;
         _updateLayers = mask;
-        rayTracingShader = shader;
+        _rayTracingShader = shader;
         this.renderPassEvent = renderPassEvent;
         this._blendMat = blendMat;
 
@@ -70,6 +68,14 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _init = true;
         _raytracingVolume.UpdateParameters = true;
         _raytracingVolume.UpdateCamera = true;
+        
+        _command = CommandBufferPool.Get(_profilerTag);
+        InitCommandBuffer();
+    }
+
+    public void OnDisable()
+    {
+        _accelerationStructure.Release();
     }
 
     public void Setup(in RTHandle currentTarget)
@@ -119,36 +125,43 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
     void InitCommandBuffer()
     {        
-        _command.SetRayTracingShaderPass(rayTracingShader, "MyRaytracingPass");
-        _command.SetRayTracingAccelerationStructure(rayTracingShader, "_RaytracingAccelerationStructure", _accelerationStructure);
+        _command.SetRayTracingShaderPass(_rayTracingShader, "MyRaytracingPass");
+        _command.SetRayTracingAccelerationStructure(_rayTracingShader, "_RaytracingAccelerationStructure", _accelerationStructure);
         
-        _cullingConfig = new RayTracingInstanceCullingConfig();
+        _cullingConfig = new RayTracingInstanceCullingConfig
+        {
+            flags = RayTracingInstanceCullingFlags.EnableLODCulling |
+                    RayTracingInstanceCullingFlags.EnableSphereCulling,
+            lodParameters = {
+                isOrthographic = false, 
+                orthoSize = 0
+            },
+            subMeshFlagsConfig = {
+                opaqueMaterials = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly,
+                transparentMaterials = RayTracingSubMeshFlags.Enabled
+            },
+            triangleCullingConfig = {
+                frontTriangleCounterClockwise = false, 
+                optionalDoubleSidedShaderKeywords = new []{"DOUBLESIDED"}, 
+                forceDoubleSided = _raytracingVolume.ForceDoubleSided.GetValue<bool>()
+            },
+            transparentMaterialConfig = {
+                optionalShaderKeywords = new[] { "USE_ALPHA" }
+            }
+        };
 
-        _cullingConfig.flags = RayTracingInstanceCullingFlags.EnableLODCulling |
-                               RayTracingInstanceCullingFlags.EnableSphereCulling;
+        var defaultTest = new RayTracingInstanceCullingTest
+        {
+            allowOpaqueMaterials = true, allowTransparentMaterials = true, layerMask = -1, instanceMask = 1,
+            shadowCastingModeMask = (1 << (int)ShadowCastingMode.Off) | (1 << (int)ShadowCastingMode.On) | (1 << (int)ShadowCastingMode.TwoSided),
+        };
+        var shadowTest = new RayTracingInstanceCullingTest
+        {
+            allowOpaqueMaterials = true, allowTransparentMaterials = true, layerMask = -1, instanceMask = 2,
+            shadowCastingModeMask = (1 << (int)ShadowCastingMode.On) | (1 << (int)ShadowCastingMode.TwoSided) | (1 << (int)ShadowCastingMode.ShadowsOnly)
+        };
 
-        _cullingConfig.lodParameters.isOrthographic = false;
-        
-        _cullingConfig.lodParameters.orthoSize = 0;
-        
-        _cullingConfig.subMeshFlagsConfig.opaqueMaterials = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
-        _cullingConfig.subMeshFlagsConfig.transparentMaterials = RayTracingSubMeshFlags.Enabled;
-
-        _cullingConfig.triangleCullingConfig.frontTriangleCounterClockwise = false;
-        _cullingConfig.triangleCullingConfig.optionalDoubleSidedShaderKeywords = new []{"DOUBLESIDED"};
-        _cullingConfig.triangleCullingConfig.forceDoubleSided = false;
-
-        _cullingConfig.transparentMaterialConfig.optionalShaderKeywords = new[] { "USE_ALPHA" };
-
-        RayTracingInstanceCullingTest instanceTest = new RayTracingInstanceCullingTest();
-        instanceTest.allowOpaqueMaterials = true;
-        instanceTest.allowTransparentMaterials = true;
-        instanceTest.allowAlphaTestedMaterials = true;
-        instanceTest.layerMask = -1;
-        instanceTest.shadowCastingModeMask = (1 << (int)ShadowCastingMode.Off) | (1 << (int)ShadowCastingMode.On) | (1 << (int)ShadowCastingMode.TwoSided);
-        instanceTest.instanceMask = 1 << 0;
-
-        _cullingConfig.instanceTests = new[] { instanceTest };
+        _cullingConfig.instanceTests = new[] { defaultTest, shadowTest };
     }
 
     void UpdateSettingData(ref RenderingData renderingData)
@@ -157,23 +170,23 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
         var camera = cameraData.camera;
         
-        _command.SetRayTracingIntParam(rayTracingShader, CullBackfaces, _raytracingVolume.CullBackfaces.GetValue<bool>() ? 1 : 0);
+        _command.SetRayTracingIntParam(_rayTracingShader, CullBackfaces, _raytracingVolume.ForceDoubleSided.GetValue<bool>() ? 0 : 1);
 
         float pixelSpreadAngle = Mathf.Atan((2*Mathf.Tan((Mathf.Deg2Rad*camera.fieldOfView)*.5f))/camera.scaledPixelHeight);
-        _command.SetRayTracingFloatParam(rayTracingShader, PixelSpreadAngle, pixelSpreadAngle);
+        _command.SetRayTracingFloatParam(_rayTracingShader, PixelSpreadAngle, pixelSpreadAngle);
 
-        _command.SetRayTracingVectorParam(rayTracingShader, BottomSkyColor, _raytracingVolume.floorColor.GetValue<Color>());
-        _command.SetRayTracingVectorParam(rayTracingShader, TopSkyColor, _raytracingVolume.skyColor.GetValue<Color>());
-        _command.SetRayTracingFloatParam(rayTracingShader, IndirectSkyStrength, _raytracingVolume.IndirectSkyStrength.GetValue<float>());
+        _command.SetRayTracingVectorParam(_rayTracingShader, BottomSkyColor, _raytracingVolume.floorColor.GetValue<Color>());
+        _command.SetRayTracingVectorParam(_rayTracingShader, TopSkyColor, _raytracingVolume.skyColor.GetValue<Color>());
+        _command.SetRayTracingFloatParam(_rayTracingShader, IndirectSkyStrength, _raytracingVolume.IndirectSkyStrength.GetValue<float>());
         
         if(RenderSettings.skybox != null && RenderSettings.skybox.HasTexture(Tex) && _raytracingVolume.UseSkybox.GetValue<bool>())
         {
             _command.SetGlobalTexture(GlobalEnvTex, RenderSettings.skybox.GetTexture(Tex));
-            _command.SetRayTracingIntParam(rayTracingShader, UseSkyBox, 1);
+            _command.SetRayTracingIntParam(_rayTracingShader, UseSkyBox, 1);
         }
         else
         {
-            _command.SetRayTracingIntParam(rayTracingShader, UseSkyBox, 0);
+            _command.SetRayTracingIntParam(_rayTracingShader, UseSkyBox, 0);
         }
         
         _command.SetGlobalInteger(ClipDistance, (int)camera.farClipPlane);
@@ -181,9 +194,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _command.SetGlobalInteger(MaxIndirectDepth, _raytracingVolume.MaxIndirect.GetValue<int>());
         _command.SetGlobalInteger(MaxRefractionDepth, _raytracingVolume.MaxRefractions.GetValue<int>());
         _command.SetGlobalInteger(RenderShadows, _raytracingVolume.RaytracedShadows.GetValue<int>());
-        _command.SetGlobalInteger(UseDropShadows, _raytracingVolume.DropShadows.GetValue<bool>() ? 1 : 0);
-        _command.SetGlobalInteger(HalfTraceReflections, _raytracingVolume.HalfTraceReflections.GetValue<bool>() ? 1 : 0);
-        _command.SetGlobalInteger(CullShadowBackfaces, _raytracingVolume.DoubleSidedShadows.GetValue<bool>() ? 0 : 1);
+        _command.SetGlobalInteger(ReflectionMode, _raytracingVolume.ReflectionMode.GetValue<int>());
         _command.SetGlobalFloat(SunSpread, _raytracingVolume.SunSpread.GetValue<float>()+1);
     }
 
@@ -193,8 +204,8 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
         var camera = cameraData.camera;
         
-        _command.SetRayTracingMatrixParam(rayTracingShader, CameraToWorld, camera.cameraToWorldMatrix);
-        _command.SetRayTracingMatrixParam(rayTracingShader, CameraInverseProjection, camera.projectionMatrix.inverse);
+        _command.SetRayTracingMatrixParam(_rayTracingShader, CameraToWorld, camera.cameraToWorldMatrix);
+        _command.SetRayTracingMatrixParam(_rayTracingShader, CameraInverseProjection, camera.projectionMatrix.inverse);
 
         /*Vector3 forward = camera.cameraToWorldMatrix.MultiplyVector(Vector3.forward);
         
@@ -212,7 +223,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
     void UpdateCommandBuffer(ref RenderingData renderingData)
     {
-        _command.SetRayTracingIntParam(rayTracingShader, FrameIndex, Mathf.FloorToInt(_frameIndex));
+        _command.SetRayTracingIntParam(_rayTracingShader, FrameIndex, Mathf.FloorToInt(_frameIndex));
     }
 
     void Render(ref RenderingData renderingData)
@@ -224,8 +235,8 @@ public class RaytracingRenderPass : ScriptableRenderPass
         var source = _currentTarget;
         InitResultTexture(w, h);        
 
-        _command.SetRayTracingTextureParam(rayTracingShader, RenderTarget, _resultTexture);
-        _command.DispatchRays(rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
+        _command.SetRayTracingTextureParam(_rayTracingShader, RenderTarget, _resultTexture);
+        _command.DispatchRays(_rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         
         _command.Blit(_resultTexture, source, _blendMat, -1);
     }

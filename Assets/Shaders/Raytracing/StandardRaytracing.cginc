@@ -12,27 +12,27 @@ void anyHit (inout RayPayload rayPayload , in AttributeData attributeData)
     uint rayFlags = RayFlags();
     
     #ifndef CAST_SHADOWS
-    if((rayFlags & SHADOWRAY_FLAG) == SHADOWRAY_FLAG)
-        IgnoreHit();
+        if((rayFlags & SHADOWRAY_FLAG) == SHADOWRAY_FLAG)
+            IgnoreHit();
     #endif
         
 
     #ifdef USE_ALPHA
-    IntersectionVertex currentvertex;
-    GetCurrentIntersectionVertex(attributeData, currentvertex);
-	                    
-    half3 worldPos = WorldRayOrigin() + RayTCurrent()* WorldRayDirection();
-    float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
-    float3 worldNormal = normalize(mul(objectToWorld, currentvertex.normalOS));
-    
-    float LOD = RayCalcLOD(currentvertex, rayPayload.rayConeWidth, WorldRayDirection(), worldNormal);
+        IntersectionVertex currentvertex;
+        GetCurrentIntersectionVertex(attributeData, currentvertex);
+	                        
+        half3 worldPos = WorldRayOrigin() + RayTCurrent()* WorldRayDirection();
+        float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
+        float3 worldNormal = normalize(mul(objectToWorld, currentvertex.normalOS));
+        
+        float LOD = RayCalcLOD(currentvertex, rayPayload.rayConeWidth, WorldRayDirection(), worldNormal);
 
-    half2 uv = CALCULATEUV;
-    
-    half alpha = (_Color*SampleTex2D(_MainTex, sampler_MainTex, uv, LOD)).w;
+        half2 uv = CALCULATEUV;
+        
+        half alpha = (_Color*SampleTex2D(_MainTex, sampler_MainTex, uv, LOD)).w;
 
-    if(alpha <= _AlphaClip)
-        IgnoreHit();
+        if(alpha <= _AlphaClip)
+            IgnoreHit();
     #endif  
 }     
 
@@ -94,12 +94,6 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
         diffuse = 1;
         shadowFactor = 1;
     #endif
-			
-    //if(gUseDropShadows && rayPayload.depth < 1)
-    //    RayDropShadowRay(worldPos, shadowFactor);				
-
-    //toonShading lol
-    //shadowFactor = smoothstep(0.47f, 0.53f, shadowFactor);
 
     float3 reflectionColor = color.xyz;				
 
@@ -126,7 +120,5 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
 
     // stop if we have reached max recursion depth
     if(rayPayload.depth +1 == gMaxDepth)
-    {
         return;
-    }
 }
