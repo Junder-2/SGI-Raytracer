@@ -195,7 +195,7 @@ int GetAdditionalLightsCount()
     // TODO: we need to expose in SRP api an ability for the pipeline cap the amount of lights
     // in the culling. This way we could do the loop branch with an uniform
     // This would be helpful to support baking exceeding lights in SH as well
-    return int(_AdditionalLightsCount.x); //prevents pop in
+    //return int(_AdditionalLightsCount.x); //prevents pop in
     return int(min(_AdditionalLightsCount.x, unity_LightData.y));
 #endif
 }

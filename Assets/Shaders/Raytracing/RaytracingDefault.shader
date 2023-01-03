@@ -50,27 +50,12 @@ Shader "RayTracing/DxrDiffuse"
 	SubShader
 	{
 		Tags {"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
-
-		// basic rasterization pass that will allow us to see the material in SceneView
-		Pass
-		{
-			Tags{ "LightMode" = "UniversalForward"}
-			
-			Blend[_SourceBlend][_DestBlend]
-            ZWrite[_ZWrite]
-			Cull[_Cull]
-			
-            HLSLPROGRAM
-			
-			#include "SimpleLit.cginc"
-			ENDHLSL
-		}
-
+		
 		// ray tracing pass
 		Pass
 		{
 			Name "MyRaytracingPass"
-			Tags{ "LightMode" = "MyRaytracingPass" }
+			Tags{"LightMode" = "MyRaytracingPass"}
 
 			HLSLPROGRAM
 
@@ -78,6 +63,35 @@ Shader "RayTracing/DxrDiffuse"
 
             #include "StandardRaytracing.cginc"
 
+			ENDHLSL
+		}
+		
+		// basic rasterization pass that will allow us to see the material in SceneView
+		Pass
+		{
+			Tags{"LightMode" = "UniversalForward"}
+			
+			Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			
+            HLSLPROGRAM			
+			#include "SimpleLit.cginc"
+			ENDHLSL
+		}
+		
+		Pass
+		{
+			Name "DepthOnly"
+			Tags{"LightMode" = "DepthOnly"}
+			
+            Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			ColorMask 0
+			
+			HLSLPROGRAM			
+			#include "SimpleDepthPass.cginc"
 			ENDHLSL
 		}
 	}

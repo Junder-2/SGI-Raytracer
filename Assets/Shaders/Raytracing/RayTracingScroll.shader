@@ -52,33 +52,14 @@ Shader "RayTracing/DxrScroll"
 
 	SubShader
 	{
+
 		Tags {"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
-
-		// basic rasterization pass that will allow us to see the material in SceneView
-		Pass
-		{
-            Tags{ "LightMode" = "UniversalForward" }
-			
-			Blend[_SourceBlend][_DestBlend]
-            ZWrite[_ZWrite]
-			Cull[_Cull]
-			
-			HLSLPROGRAM
-
-			float _ScrollSpeed = 0;
-			float2 _ScrollDir;
-
-			#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy		
-			
-			#include "SimpleLit.cginc"
-			ENDHLSL
-		}
-
+		
 		// ray tracing pass
 		Pass
 		{
 			Name "MyRaytracingPass"
-			Tags{ "LightMode" = "MyRaytracingPass" }
+			Tags{"LightMode" = "MyRaytracingPass"}
 
 			HLSLPROGRAM
 
@@ -87,10 +68,51 @@ Shader "RayTracing/DxrScroll"
 			float _ScrollSpeed = 0;
 			float2 _ScrollDir;
 
-			#define CALCULATEUV TRANSFORM_TEX(currentvertex.texCoord0, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy				
+			#define CALCULATEUV TRANSFORM_TEX(currentvertex.texCoord0, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy	
 
-			#include "StandardRaytracing.cginc"
+            #include "StandardRaytracing.cginc"
 
+			ENDHLSL
+		}
+		
+		// basic rasterization pass that will allow us to see the material in SceneView
+		Pass
+		{
+			Tags{"LightMode" = "UniversalForward"}
+			
+			Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			
+            HLSLPROGRAM
+
+            float _ScrollSpeed = 0;
+			float2 _ScrollDir;
+
+			#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy
+            
+			#include "SimpleLit.cginc"
+			ENDHLSL
+		}
+		
+		Pass
+		{
+			Name "DepthOnly"
+			Tags{"LightMode" = "DepthOnly"}
+			
+            Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			ColorMask 0
+			
+			HLSLPROGRAM
+
+			float _ScrollSpeed = 0;
+			float2 _ScrollDir;
+
+			#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy
+			
+			#include "SimpleDepthPass.cginc"
 			ENDHLSL
 		}
 	}

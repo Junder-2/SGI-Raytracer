@@ -1,3 +1,6 @@
+#define _ADDITIONAL_LIGHTS
+#define _ADDITIONAL_LIGHTS_VERTEX
+
 #include "Lights.hlsl"
 #include "Common.cginc"
 
@@ -201,9 +204,10 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
 void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFactor, half specularStrength, inout RayPayload rayPayload, inout float shadowFactor, inout float3 specular, inout float3 diffuse)
 {
     int pixelLightCount = GetAdditionalLightsCount();
-    for (int i = 0; i < pixelLightCount; i++) 
+    for (uint i = 0; i < pixelLightCount; i++) 
     {
-        Light light = GetAdditionalPerObjectLight(i, worldPos);
+        
+        Light light = GetAdditionalLight(i, worldPos);
         float3 lightDir = light.direction;
         float facing = max((dot(lightDir, worldNormal)), 0);
 

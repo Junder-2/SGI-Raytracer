@@ -55,10 +55,36 @@ Shader "RayTracing/DxrFlipBook"
 	{
 		Tags {"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
 
+		// ray tracing pass
+		Pass
+		{
+			Name "MyRaytracingPass"
+			Tags{"LightMode" = "MyRaytracingPass"}
+
+			HLSLPROGRAM
+
+			#pragma raytracing Raytracer
+
+			float _FlipSpeed;
+			float _Width;
+			float _Height;
+
+			//very cursed but works
+			#define CALCULATEUV \
+				(TRANSFORM_TEX(currentvertex.texCoord0, _MainTex) + float2(\
+			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) - (_Width * floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))), \
+			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))) \
+			*float2(1.0, 1.0) / float2(_Width, _Height);
+			
+			#include "StandardRaytracing.cginc"
+			
+			ENDHLSL
+		}
+		
 		// basic rasterization pass that will allow us to see the material in SceneView
 		Pass
 		{
-            Tags{ "LightMode" = "UniversalForward" }
+			Tags{"LightMode" = "UniversalForward"}
 			
 			Blend[_SourceBlend][_DestBlend]
             ZWrite[_ZWrite]
@@ -80,30 +106,30 @@ Shader "RayTracing/DxrFlipBook"
 			
 			ENDHLSL
 		}
-
-		// ray tracing pass
+		
 		Pass
 		{
-			Name "MyRaytracingPass"
-			Tags{ "LightMode" = "MyRaytracingPass" }
-
+			Name "DepthOnly"
+			Tags{"LightMode" = "DepthOnly"}
+			
+            Blend[_SourceBlend][_DestBlend]
+            ZWrite[_ZWrite]
+			Cull[_Cull]
+			ColorMask 0
+			
 			HLSLPROGRAM
-
-			#pragma raytracing Raytracer
 
 			float _FlipSpeed;
 			float _Width;
 			float _Height;
 
-			//very cursed but works
 			#define CALCULATEUV \
-				(TRANSFORM_TEX(currentvertex.texCoord0, _MainTex) + float2(\
+				(TRANSFORM_TEX(v.uv, _MainTex) + float2(\
 			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) - (_Width * floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))), \
 			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))) \
 			*float2(1.0, 1.0) / float2(_Width, _Height);
 			
-			#include "StandardRaytracing.cginc"
-			
+			#include "SimpleDepthPass.cginc"
 			ENDHLSL
 		}
 	}
