@@ -40,7 +40,7 @@ void anyHit (inout RayPayload rayPayload , in AttributeData attributeData)
 void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attributeData : SV_IntersectionAttributes)
 {
     float3 debug = 0;
-
+    
     // compute vertex data on ray/triangle intersection
     IntersectionVertex currentvertex;
     GetCurrentIntersectionVertex(attributeData, currentvertex);

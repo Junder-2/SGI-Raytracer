@@ -3,6 +3,8 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LightCookie/LightCookie.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Clustering.hlsl"
 
+#define DEFAULT_LIGHT_LAYERS 0xFF
+
 // Abstraction over Light shading data.
 struct Light
 {

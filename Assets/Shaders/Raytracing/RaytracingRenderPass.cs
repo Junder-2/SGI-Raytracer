@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Experimental.Rendering;
+
 using UnityEngine.Rendering.Universal;
 public class RaytracingRenderPass : ScriptableRenderPass
 {
@@ -53,7 +53,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         this.renderPassEvent = renderPassEvent;
         this._blendMat = blendMat;
 
-        var settings = new RayTracingAccelerationStructure.RASSettings();
+        var settings = new RayTracingAccelerationStructure.Settings();
         settings.layerMask = _updateLayers;
         settings.managementMode = RayTracingAccelerationStructure.ManagementMode.Manual;
         settings.rayTracingModeMask = RayTracingAccelerationStructure.RayTracingModeMask.Everything;
@@ -218,6 +218,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
         _accelerationStructure.ClearInstances();
         _accelerationStructure.CullInstances(ref _cullingConfig);
+        //_accelerationStructure.AddVFXInstances();
         _accelerationStructure.Build();
     }
 
@@ -238,7 +239,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _command.SetRayTracingTextureParam(_rayTracingShader, RenderTarget, _resultTexture);
         _command.DispatchRays(_rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         
-        _command.Blit(_resultTexture, source, _blendMat, -1);
+        _command.Blit(_resultTexture, source);
     }
 }
 

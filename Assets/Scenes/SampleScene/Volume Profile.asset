@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Bloom
   m_EditorClassIdentifier: 
   active: 0
+  skipIterations:
+    m_OverrideState: 0
+    m_Value: 1
   threshold:
     m_OverrideState: 1
     m_Value: 1.05
@@ -31,9 +34,12 @@ MonoBehaviour:
   highQualityFiltering:
     m_OverrideState: 0
     m_Value: 0
-  skipIterations:
+  downscale:
     m_OverrideState: 0
-    m_Value: 1
+    m_Value: 0
+  maxIterations:
+    m_OverrideState: 0
+    m_Value: 6
   dirtTexture:
     m_OverrideState: 0
     m_Value: {fileID: 0}
@@ -54,9 +60,60 @@ MonoBehaviour:
   m_Name: Volume Profile
   m_EditorClassIdentifier: 
   components:
-  - {fileID: 659785236929737402}
+  - {fileID: 133301900783180915}
   - {fileID: -343520855212018841}
   - {fileID: 6468538659464832847}
+--- !u!114 &133301900783180915
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6feb5ce32c664cc40af6171d60845394, type: 3}
+  m_Name: Raytracing
+  m_EditorClassIdentifier: 
+  active: 1
+  Enable:
+    m_OverrideState: 1
+    m_Value: 1
+  UseSkybox:
+    m_OverrideState: 1
+    m_Value: 1
+  ForceDoubleSided:
+    m_OverrideState: 1
+    m_Value: 0
+  SunSpread:
+    m_OverrideState: 1
+    m_Value: 0
+  MaxReflections:
+    m_OverrideState: 1
+    m_Value: 4
+  MaxIndirect:
+    m_OverrideState: 1
+    m_Value: 0
+  IndirectSkyStrength:
+    m_OverrideState: 0
+    m_Value: 1
+  MaxRefractions:
+    m_OverrideState: 1
+    m_Value: 4
+  RaytracedShadows:
+    m_OverrideState: 1
+    m_Value: 1
+  ReflectionMode:
+    m_OverrideState: 1
+    m_Value: 3
+  skyColor:
+    m_OverrideState: 1
+    m_Value: {r: 0, g: 0, b: 1, a: 1}
+  floorColor:
+    m_OverrideState: 1
+    m_Value: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  UpdateParameters: 1
+  UpdateCamera: 1
 --- !u!114 &659785236929737402
 MonoBehaviour:
   m_ObjectHideFlags: 3

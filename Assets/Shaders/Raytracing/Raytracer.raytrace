@@ -110,11 +110,3 @@ void ShadowMiss(inout ShadowHitInfo hit : SV_RayPayload)
 { 
     hit.isHit = 0;
 }
-
-// "back up" closest hit shader. it is used when we hit material without raytracing shader pass
-[shader("closesthit")]
-void ClosestHitMain(inout RayPayload payload : SV_RayPayload, AttributeData attributeData : SV_IntersectionAttributes)
-{
-	// simply return pink color to signal error
-	payload.color = float4(1.0f, 0.0f, 0.5f, 1);
-}
