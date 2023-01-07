@@ -90,7 +90,12 @@ Shader "RayTracing/DxrFlipBook"
             ZWrite[_ZWrite]
 			Cull[_Cull]
 			
-			HLSLPROGRAM		
+			HLSLPROGRAM
+			#pragma multi_compile _ RAYTRACING_ON
+			
+			#if RAYTRACING_ON
+
+			#else
 
 			float _FlipSpeed;
 			float _Width;
@@ -103,6 +108,7 @@ Shader "RayTracing/DxrFlipBook"
 			*float2(1.0, 1.0) / float2(_Width, _Height);
 			
 			#include "SimpleLit.cginc"
+            #endif
 			
 			ENDHLSL
 		}

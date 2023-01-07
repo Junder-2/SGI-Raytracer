@@ -22,7 +22,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
     private float _frameIndex;
 
     private bool _init = false;
-    
+
     private static readonly int MaxReflectDepth = Shader.PropertyToID("gMaxReflectDepth");
     private static readonly int MaxIndirectDepth = Shader.PropertyToID("gMaxIndirectDepth");
     private static readonly int MaxRefractionDepth = Shader.PropertyToID("gMaxRefractionDepth");
@@ -67,14 +67,16 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _frameIndex = 0;
         _init = true;
         _raytracingVolume.UpdateParameters = true;
-        _raytracingVolume.UpdateCamera = true;
-        
+
+        Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
+        Shader.EnableKeyword("RAYTRACING_ON");
         _command = CommandBufferPool.Get(_profilerTag);
         InitCommandBuffer();
     }
 
     public void OnDisable()
     {
+        Shader.DisableKeyword("RAYTRACING_ON");
         _accelerationStructure.Release();
     }
 
@@ -124,7 +126,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
     }
 
     void InitCommandBuffer()
-    {        
+    {
         _command.SetRayTracingShaderPass(_rayTracingShader, "MyRaytracingPass");
         _command.SetRayTracingAccelerationStructure(_rayTracingShader, "_RaytracingAccelerationStructure", _accelerationStructure);
         

@@ -26,12 +26,14 @@ public class RaytracingBlit : ScriptableRendererFeature
         if(settings.Colorblit != null)
             colorBlit = new Material(settings.Colorblit);
         rayTracingPass = new RaytracingRenderPass("Raytracer", settings.WhenToInsert, settings.rayTracingShader, colorBlit, settings.updateLayers);
+        
+        
     }
     
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         if (!settings.IsEnabled) return;
-
+        
         renderer.EnqueuePass(rayTracingPass);
     }
 

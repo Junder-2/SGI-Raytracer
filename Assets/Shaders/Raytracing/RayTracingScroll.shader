@@ -85,13 +85,17 @@ Shader "RayTracing/DxrScroll"
 			Cull[_Cull]
 			
             HLSLPROGRAM
+            #if RAYTRACING_ON
+
+            #else
 
             float _ScrollSpeed = 0;
 			float2 _ScrollDir;
 
 			#define CALCULATEUV TRANSFORM_TEX(v.uv, _MainTex) + _ScrollSpeed*_Time.y*.1f*normalize(_ScrollDir).xy
             
-			#include "SimpleLit.cginc"
+            #include "SimpleLit.cginc"
+            #endif
 			ENDHLSL
 		}
 		
