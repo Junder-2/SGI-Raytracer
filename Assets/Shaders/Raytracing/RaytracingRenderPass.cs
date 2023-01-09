@@ -22,7 +22,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
     private float _frameIndex;
 
     private bool _init = false;
-
+    
     private static readonly int MaxReflectDepth = Shader.PropertyToID("gMaxReflectDepth");
     private static readonly int MaxIndirectDepth = Shader.PropertyToID("gMaxIndirectDepth");
     private static readonly int MaxRefractionDepth = Shader.PropertyToID("gMaxRefractionDepth");
@@ -68,8 +68,9 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _init = true;
         _raytracingVolume.UpdateParameters = true;
 
-        Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
+        GlobalKeyword.Create("RAYTRACING_ON");
         Shader.EnableKeyword("RAYTRACING_ON");
+        Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
         _command = CommandBufferPool.Get(_profilerTag);
         InitCommandBuffer();
     }
@@ -77,6 +78,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
     public void OnDisable()
     {
         Shader.DisableKeyword("RAYTRACING_ON");
+        Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
         _accelerationStructure.Release();
     }
 
@@ -91,7 +93,17 @@ public class RaytracingRenderPass : ScriptableRenderPass
         var stack = VolumeManager.instance.stack;
         _raytracingVolume = stack.GetComponent<Raytracing>();
         if (_raytracingVolume == null) return;
-        if (!_raytracingVolume.IsActive()) return;
+        if (!_raytracingVolume.IsActive())
+        {
+            Shader.DisableKeyword("RAYTRACING_ON");
+            Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
+            return;
+        }
+        else
+        {
+            Shader.EnableKeyword("RAYTRACING_ON");
+            Debug.Log(Shader.IsKeywordEnabled("RAYTRACING_ON"));
+        }
 
         _command = CommandBufferPool.Get(_profilerTag);
         if(_init)

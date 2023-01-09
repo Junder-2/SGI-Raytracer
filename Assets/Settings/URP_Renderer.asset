@@ -20,7 +20,7 @@ MonoBehaviour:
     updateLayers:
       serializedVersion: 2
       m_Bits: 2147483647
-    WhenToInsert: 400
+    WhenToInsert: 500
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

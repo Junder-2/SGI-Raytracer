@@ -24,10 +24,4 @@ public class Raytracing : VolumeComponent, IPostProcessComponent
 
     private Matrix4x4 _cameraWorldMatrix;
     public bool UpdateParameters = true;
-
-    protected override void OnDisable()
-    {
-        base.OnDisable();
-        Shader.DisableKeyword("RAYTRACING_ON");
-    }
 }

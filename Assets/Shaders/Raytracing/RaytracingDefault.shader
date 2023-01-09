@@ -78,7 +78,9 @@ Shader "RayTracing/DxrDiffuse"
             HLSLPROGRAM
 			#pragma multi_compile _ RAYTRACING_ON
             
-            #ifndef RAYTRACING_ON
+            #if RAYTRACING_ON
+				#include "EmptyShader.cginc"
+			#else
 				#include "SimpleLit.cginc"
             #endif
             
