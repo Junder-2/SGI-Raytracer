@@ -23,5 +23,4 @@ public class Raytracing : VolumeComponent, IPostProcessComponent
     public bool IsTileCompatible() => false;
 
     private Matrix4x4 _cameraWorldMatrix;
-    public bool UpdateParameters = true;
 }
