@@ -9,7 +9,6 @@ public class RaytracingRenderPass : ScriptableRenderPass
     private RTHandle _currentTarget;
     private RenderTexture _resultTexture;
     private readonly RayTracingShader _rayTracingShader;
-    private Material _blendMat;
 
     private LayerMask _updateLayers;
 
@@ -18,11 +17,12 @@ public class RaytracingRenderPass : ScriptableRenderPass
     private RayTracingInstanceCullingConfig _cullingConfig;
 
     private CommandBuffer _command;
+    private GlobalKeyword _raytracingFeature;
 
     private float _frameIndex;
 
     private bool _init = false;
-    
+
     private static readonly int MaxReflectDepth = Shader.PropertyToID("gMaxReflectDepth");
     private static readonly int MaxIndirectDepth = Shader.PropertyToID("gMaxIndirectDepth");
     private static readonly int MaxRefractionDepth = Shader.PropertyToID("gMaxRefractionDepth");
@@ -45,13 +45,12 @@ public class RaytracingRenderPass : ScriptableRenderPass
     private static readonly int RenderTarget = Shader.PropertyToID("_RenderTarget");
     
     
-    public RaytracingRenderPass(string profilerTag, RenderPassEvent renderPassEvent, RayTracingShader shader, Material blendMat, LayerMask mask)
+    public RaytracingRenderPass(string profilerTag, RenderPassEvent renderPassEvent, RayTracingShader shader, LayerMask mask)
     {
         this._profilerTag = profilerTag;
         _updateLayers = mask;
         _rayTracingShader = shader;
         this.renderPassEvent = renderPassEvent;
-        this._blendMat = blendMat;
 
         var settings = new RayTracingAccelerationStructure.RASSettings();
         settings.layerMask = _updateLayers;
@@ -66,22 +65,12 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
         _frameIndex = 0;
         _init = true;
-        _raytracingVolume.UpdateParameters = true;
-        _raytracingVolume.UpdateCamera = true;
         
         _command = CommandBufferPool.Get(_profilerTag);
         InitCommandBuffer();
     }
 
-    public void OnDisable()
-    {
-        _accelerationStructure.Release();
-    }
-
-    public void Setup(in RTHandle currentTarget)
-    {
-        this._currentTarget = currentTarget;
-    }
+    public void Setup(in RTHandle currentTarget) => this._currentTarget = currentTarget;
 
     public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
     {
@@ -89,24 +78,25 @@ public class RaytracingRenderPass : ScriptableRenderPass
         var stack = VolumeManager.instance.stack;
         _raytracingVolume = stack.GetComponent<Raytracing>();
         if (_raytracingVolume == null) return;
-        if (!_raytracingVolume.IsActive()) return;
+        if (!_raytracingVolume.IsActive())
+            return;
 
         _command = CommandBufferPool.Get(_profilerTag);
         if(_init)
             InitCommandBuffer();
 
         _frameIndex += Time.deltaTime*60f;
-
-        if(_raytracingVolume.UpdateParameters)
-            UpdateSettingData(ref renderingData);
         
+        UpdateSettingData(ref renderingData);
         UpdateCameraData(ref renderingData);
-        
-        UpdateCommandBuffer(ref renderingData);
+
         Render(ref renderingData);
+        _command.EnableKeyword(_raytracingFeature);
         context.ExecuteCommandBuffer(_command);
         CommandBufferPool.Release(_command);
     }
+
+    public override void OnFinishCameraStackRendering(CommandBuffer cmd) => cmd.DisableKeyword(_raytracingFeature);
 
     void InitResultTexture(int width, int height)
     {
@@ -124,7 +114,8 @@ public class RaytracingRenderPass : ScriptableRenderPass
     }
 
     void InitCommandBuffer()
-    {        
+    {
+        _raytracingFeature = GlobalKeyword.Create("RAYTRACING_ON");
         _command.SetRayTracingShaderPass(_rayTracingShader, "MyRaytracingPass");
         _command.SetRayTracingAccelerationStructure(_rayTracingShader, "_RaytracingAccelerationStructure", _accelerationStructure);
         
@@ -204,12 +195,10 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
         var camera = cameraData.camera;
         
+        _command.SetRayTracingIntParam(_rayTracingShader, FrameIndex, Mathf.FloorToInt(_frameIndex));
         _command.SetRayTracingMatrixParam(_rayTracingShader, CameraToWorld, camera.cameraToWorldMatrix);
         _command.SetRayTracingMatrixParam(_rayTracingShader, CameraInverseProjection, camera.projectionMatrix.inverse);
-
-        /*Vector3 forward = camera.cameraToWorldMatrix.MultiplyVector(Vector3.forward);
         
-        _cullingConfig.planes = new[] { new Plane(forward, camera.nearClipPlane), new Plane(forward, camera.farClipPlane)};*/
         _cullingConfig.sphereRadius = camera.farClipPlane*.5f;
         _cullingConfig.sphereCenter = cameraData.worldSpaceCameraPos;
         _cullingConfig.lodParameters.fieldOfView = camera.fieldOfView;
@@ -219,11 +208,6 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _accelerationStructure.ClearInstances();
         _accelerationStructure.CullInstances(ref _cullingConfig);
         _accelerationStructure.Build();
-    }
-
-    void UpdateCommandBuffer(ref RenderingData renderingData)
-    {
-        _command.SetRayTracingIntParam(_rayTracingShader, FrameIndex, Mathf.FloorToInt(_frameIndex));
     }
 
     void Render(ref RenderingData renderingData)
@@ -238,7 +222,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
         _command.SetRayTracingTextureParam(_rayTracingShader, RenderTarget, _resultTexture);
         _command.DispatchRays(_rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         
-        _command.Blit(_resultTexture, source, _blendMat, -1);
+        _command.Blit(_resultTexture, source);
     }
 }
 

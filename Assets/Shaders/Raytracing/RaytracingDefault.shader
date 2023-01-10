@@ -75,8 +75,15 @@ Shader "RayTracing/DxrDiffuse"
             ZWrite[_ZWrite]
 			Cull[_Cull]
 			
-            HLSLPROGRAM			
-			#include "SimpleLit.cginc"
+            HLSLPROGRAM
+			#pragma multi_compile _ RAYTRACING_ON
+            
+            #if RAYTRACING_ON
+				#include "EmptyShader.cginc"
+			#else
+				#include "SimpleLit.cginc"
+            #endif
+            
 			ENDHLSL
 		}
 		

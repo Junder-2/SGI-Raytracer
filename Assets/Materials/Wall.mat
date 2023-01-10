@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - CAST_SHADOWS
+  - DOUBLESIDED
   - RECEIVE_SHADOWS
   - USE_ALPHA
   - USE_REFLECTIONS
@@ -116,14 +117,14 @@ Material:
     - _CastShadows: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _Cull: 2
+    - _Cull: 0
     - _CullBackfaces: 1
     - _Cutoff: 0.5
     - _DestBlend: 10
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DisableAdditionalLights: 0
-    - _DoubleSided: 0
+    - _DoubleSided: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1

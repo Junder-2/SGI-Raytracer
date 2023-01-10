@@ -90,20 +90,24 @@ Shader "RayTracing/DxrFlipBook"
             ZWrite[_ZWrite]
 			Cull[_Cull]
 			
-			HLSLPROGRAM		
-
-			float _FlipSpeed;
-			float _Width;
-			float _Height;
-
-			#define CALCULATEUV \
-				(TRANSFORM_TEX(v.uv, _MainTex) + float2(\
-			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) - (_Width * floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))), \
-			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))) \
-			*float2(1.0, 1.0) / float2(_Width, _Height);
+			HLSLPROGRAM
+			#pragma multi_compile _ RAYTRACING_ON
 			
-			#include "SimpleLit.cginc"
-			
+			#if RAYTRACING_ON
+				#include "EmptyShader.cginc"
+			#else
+				float _FlipSpeed;
+				float _Width;
+				float _Height;
+
+				#define CALCULATEUV \
+					(TRANSFORM_TEX(v.uv, _MainTex) + float2(\
+				abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) - (_Width * floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))), \
+				abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))) \
+				*float2(1.0, 1.0) / float2(_Width, _Height);
+				
+				#include "SimpleLit.cginc"
+	            #endif			
 			ENDHLSL
 		}
 		

@@ -22,27 +22,5 @@ public class Raytracing : VolumeComponent, IPostProcessComponent
     public bool IsActive() => Enable.value;
     public bool IsTileCompatible() => false;
 
-    public void RetrieveInstances(ref RayTracingAccelerationStructure accelerationStructure)
-    {
-        accelerationStructure.ClearInstances();
-        
-        foreach (var item in FindObjectsOfType<Renderer>())
-        {
-            if (item.rayTracingMode == RayTracingMode.Off) continue;
-
-            accelerationStructure.AddInstance(item);
-            accelerationStructure.UpdateInstanceTransform(item);
-        }
-    }
-
     private Matrix4x4 _cameraWorldMatrix;
-    public bool UpdateParameters = true;
-    public bool UpdateCamera = true;
-
-    private void Update()
-    {
-        if (_cameraWorldMatrix == Camera.main.transform.localToWorldMatrix) return;
-        UpdateCamera = true;
-        _cameraWorldMatrix = Camera.main.transform.localToWorldMatrix;
-    }
 }
