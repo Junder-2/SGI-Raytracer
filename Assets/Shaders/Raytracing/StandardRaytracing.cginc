@@ -41,18 +41,16 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
 {
     float3 debug = 0;
 
+    float3 rayOrigin = WorldRayOrigin();
+    float3 rayDir = WorldRayDirection();
+    float3 worldPos = rayOrigin + RayTCurrent()* rayDir;
     // compute vertex data on ray/triangle intersection
     IntersectionVertex currentvertex;
-    GetCurrentIntersectionVertex(attributeData, currentvertex);
-
+    GetCurrentIntersectionVertex(attributeData, currentvertex, rayDir);
     float2 uv = CALCULATEUV;
 
     float3x3 objectToWorld = (float3x3)ObjectToWorld3x4();
     float3 worldNormal = normalize(mul(objectToWorld, currentvertex.normalOS));
-
-    float3 rayOrigin = WorldRayOrigin();
-    float3 rayDir = WorldRayDirection();
-    float3 worldPos = rayOrigin + RayTCurrent()* rayDir;
 
     rayPayload.rayConeWidth = rayPayload.rayConeSpreadAngle*RayTCurrent();
             
@@ -77,7 +75,11 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
                     
         RayCalcNormalMap(tangentNormal, _NormalStrength, currentvertex, worldNormal);
     #endif
-			
+    
+    #ifdef DOUBLESIDED
+        worldNormal *= currentvertex.frontFace ? 1 : -1;
+    #endif
+		    	
     float3 specular = 0;
     half shadowFactor = 0;
     half3 indirect = _GlossyEnvironmentColor.xyz;
