@@ -1,0 +1,12 @@
+# Blender MTL File: 'ChromaGun.blend'
+# Material Count: 1
+
+newmtl Material
+Ns 873.375212
+Ka 1.000000 1.000000 1.000000
+Kd 0.324969 0.492596 0.800000
+Ks 0.647273 0.647273 0.647273
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3

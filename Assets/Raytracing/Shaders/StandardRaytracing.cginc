@@ -4,7 +4,7 @@
 #pragma shader_feature_local _ DISABLE_ADDITIONAL_LIGHTS
 #pragma shader_feature_local _ UNLIT
 					
-#include "RayHelpers.cginc"
+#include "Utility/RayHelpers.cginc"
 
 [shader("anyhit")]
 void anyHit (inout RayPayload rayPayload , in AttributeData attributeData)

@@ -21,21 +21,11 @@ float DistanceAttenuation(float distanceSqr, half2 distanceAttenuation)
     // for directional lights attenuation will be 1
     float lightAtten = rcp(distanceSqr);
     float2 distanceAttenuationFloat = float2(distanceAttenuation);
-#if SHADER_HINT_NICE_QUALITY
+
     // Use the smoothing factor also used in the Unity lightmapper.
     half factor = half(distanceSqr * distanceAttenuationFloat.x);
     half smoothFactor = saturate(half(1.0) - factor * factor);
     smoothFactor = smoothFactor * smoothFactor;
-#else
-    // We need to smoothly fade attenuation to light range. We start fading linearly at 80% of light range
-    // Therefore:
-    // fadeDistance = (0.8 * 0.8 * lightRangeSq)
-    // smoothFactor = (lightRangeSqr - distanceSqr) / (lightRangeSqr - fadeDistance)
-    // We can rewrite that to fit a MAD by doing
-    // distanceSqr * (1.0 / (fadeDistanceSqr - lightRangeSqr)) + (-lightRangeSqr / (fadeDistanceSqr - lightRangeSqr)
-    // distanceSqr *        distanceAttenuation.y            +             distanceAttenuation.z
-    half smoothFactor = half(saturate(distanceSqr * distanceAttenuationFloat.x + distanceAttenuationFloat.y));
-#endif
 
     return lightAtten * smoothFactor;
 }
@@ -59,21 +49,20 @@ Light GetMainLight()
 {
     Light light;
     light.direction = half3(_MainLightPosition.xyz);
-#if USE_CLUSTERED_LIGHTING
+    #if USE_FORWARD_PLUS
+    #if defined(LIGHTMAP_ON) && defined(LIGHTMAP_SHADOW_MIXING)
+        light.distanceAttenuation = _MainLightColor.a;
+    #else
     light.distanceAttenuation = 1.0;
-#else
+    #endif
+    #else
     light.distanceAttenuation = unity_LightData.z; // unity_LightData.z is 1 when not culled by the culling mask, otherwise 0.
-#endif
+    #endif
     light.color = _MainLightColor.rgb;
 
     light.distance = 0;
-
-#ifdef _LIGHT_LAYERS
+    
     light.layerMask = _MainLightLayerMask;
-#else
-    light.layerMask = DEFAULT_LIGHT_LAYERS;
-#endif
-
     return light;
 }
 
@@ -86,23 +75,13 @@ Light GetAdditionalPerObjectLight(int perObjectLightIndex, float3 positionWS)
     half3 color = _AdditionalLightsBuffer[perObjectLightIndex].color.rgb;
     half4 distanceAndSpotAttenuation = _AdditionalLightsBuffer[perObjectLightIndex].attenuation;
     half4 spotDirection = _AdditionalLightsBuffer[perObjectLightIndex].spotDirection;
-    #ifdef _LIGHT_LAYERS
-        uint lightLayerMask = _AdditionalLightsBuffer[perObjectLightIndex].layerMask;
-    #else
-        uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
-    #endif
-
+    uint lightLayerMask = _AdditionalLightsBuffer[perObjectLightIndex].layerMask;
 #else
     float4 lightPositionWS = _AdditionalLightsPosition[perObjectLightIndex];
     half3 color = _AdditionalLightsColor[perObjectLightIndex].rgb;
     half4 distanceAndSpotAttenuation = _AdditionalLightsAttenuation[perObjectLightIndex];
     half4 spotDirection = _AdditionalLightsSpotDir[perObjectLightIndex];
-    #ifdef _LIGHT_LAYERS
-        uint lightLayerMask = asuint(_AdditionalLightsLayerMasks[perObjectLightIndex]);
-    #else
-        uint lightLayerMask = DEFAULT_LIGHT_LAYERS;
-    #endif
-
+    uint lightLayerMask = asuint(_AdditionalLightsLayerMasks[perObjectLightIndex]);
 #endif
 
     // Directional lights store direction in lightPosition.xyz and have .w set to 0.0.
@@ -128,7 +107,7 @@ Light GetAdditionalPerObjectLight(int perObjectLightIndex, float3 positionWS)
 // This abstract the underlying data implementation for storing lights/light indices
 int GetPerObjectLightIndex(uint index)
 {
-/////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 // Structured Buffer Path                                                                   /
 //                                                                                          /
 // Lights and light indices are stored in StructuredBuffer. We can just index them.         /
@@ -178,7 +157,7 @@ int GetPerObjectLightIndex(uint index)
 // index to a perObjectLightIndex
 Light GetAdditionalLight(uint i, float3 positionWS)
 {
-#if USE_CLUSTERED_LIGHTING
+#if USE_FORWARD_PLUS
     int lightIndex = i;
 #else
     int lightIndex = GetPerObjectLightIndex(i);
@@ -188,7 +167,7 @@ Light GetAdditionalLight(uint i, float3 positionWS)
 
 int GetAdditionalLightsCount()
 {
-#if USE_CLUSTERED_LIGHTING
+#if USE_FORWARD_PLUS
     // Counting the number of lights in clustered requires traversing the bit list, and is not needed up front.
     return 0;
 #else

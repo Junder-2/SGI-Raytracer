@@ -7,7 +7,7 @@
 #pragma shader_feature_local _ DISABLE_ADDITIONAL_LIGHTS
 #pragma shader_feature_local _ UNLIT
 
-#include "RasterHelpers.cginc"
+#include "Utility/RasterHelpers.cginc"
 #include "HLSLSupport.cginc"
 
 struct appdata

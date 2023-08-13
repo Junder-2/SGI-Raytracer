@@ -6,7 +6,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
 {
     private string _profilerTag;
 
-    private RTHandle _currentTarget;
+    private RTHandle _raytraceTarget;
     private RenderTexture _resultTexture;
     private readonly RayTracingShader _rayTracingShader;
 
@@ -70,7 +70,16 @@ public class RaytracingRenderPass : ScriptableRenderPass
         InitCommandBuffer();
     }
 
-    public void Setup(in RTHandle currentTarget) => this._currentTarget = currentTarget;
+    public void Setup(in RTHandle currentTarget) { }
+
+    public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+    {
+        var colorDesc = renderingData.cameraData.cameraTargetDescriptor;
+        colorDesc.depthBufferBits = 0;
+        colorDesc.enableRandomWrite = true;
+        // Set up temporary color buffer (for blit)
+        RenderingUtils.ReAllocateIfNeeded(ref _raytraceTarget, colorDesc, name: "_RaytraceTexture");
+    }
 
     public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
     {
@@ -100,6 +109,7 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
     void InitResultTexture(int width, int height)
     {
+        /*
         if (_resultTexture == null || _resultTexture.width != width || _resultTexture.height != height)
         {
             if (_resultTexture != null)
@@ -111,6 +121,9 @@ public class RaytracingRenderPass : ScriptableRenderPass
 
             InitCommandBuffer();
         }
+        */
+        
+        InitCommandBuffer();
     }
 
     void InitCommandBuffer()
@@ -216,13 +229,19 @@ public class RaytracingRenderPass : ScriptableRenderPass
         var w = cameraData.camera.scaledPixelWidth;
         var h = cameraData.camera.scaledPixelHeight;
 
-        var source = _currentTarget;
-        InitResultTexture(w, h);        
-
-        _command.SetRayTracingTextureParam(_rayTracingShader, RenderTarget, _resultTexture);
+        var camTarget = renderingData.cameraData.renderer.cameraColorTargetHandle;;
+        InitResultTexture(w, h);
+        _command.SetRayTracingTextureParam(_rayTracingShader, RenderTarget, _raytraceTarget);
         _command.DispatchRays(_rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         
-        _command.Blit(_resultTexture, source);
+        Blitter.BlitCameraTexture(_command, _raytraceTarget, camTarget);
+        
+        //_command.Blit(_resultTexture, source);
+    }
+    
+    // Cleanup Called by feature below
+    public void Dispose() {
+        _raytraceTarget?.Release();
     }
 }
 

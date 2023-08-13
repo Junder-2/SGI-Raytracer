@@ -3,7 +3,7 @@
 
 #pragma shader_feature_local _ USE_ALPHACLIP
 
-#include "RasterHelpers.cginc"
+#include "Utility/RasterHelpers.cginc"
 #include "HLSLSupport.cginc"
 
 struct appdata

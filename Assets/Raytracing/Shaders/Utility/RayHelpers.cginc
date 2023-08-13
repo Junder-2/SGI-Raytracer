@@ -1,8 +1,8 @@
 #define _ADDITIONAL_LIGHTS
 #define _ADDITIONAL_LIGHTS_VERTEX
 
-#include "Lights.hlsl"
-#include "Common.cginc"
+#include "Utility/Lights.hlsl"
+#include "Utility/Common.cginc"
 
 CBUFFER_START(UnityPerMaterial)
     float4 _Color;
@@ -138,7 +138,7 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
 
     if(mainLight.distanceAttenuation >= 0)
     {
-        float currLightAmount = 0;
+        float currLightAmount = facing;
         #ifdef RECEIVE_SHADOWS
             if(gRenderShadows != 0)
             {
@@ -194,7 +194,7 @@ void RayMainLightCalc(float3 worldNormal, float3 worldPos, half specularFactor, 
 
         diffuse += mainLight.color*mainLight.distanceAttenuation;  
 
-        if(rayPayload.depth < gMaxReflectDepth+1 && facing != 0)
+        if(rayPayload.depth < gMaxReflectDepth+1 && currLightAmount != 0)
         {
             BlinnPhongCalc(lightDir, worldNormal, worldPos, specularFactor, specularStrength*currLightAmount, specular);
         }
@@ -214,7 +214,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
         float lightStrength = light.distanceAttenuation*Luminance(light.color);
         float shadowAmount = 1;
 
-        float currLightAmount = 0;
+        float currLightAmount = facing;
         
         if(light.distanceAttenuation > 0)
         {
@@ -269,7 +269,7 @@ void RayAdditionalLightCalc(half3 worldNormal, float3 worldPos, half specularFac
 
             diffuse += light.color*currLightAmount;
 
-            if(rayPayload.depth < gMaxReflectDepth+1 && facing != 0)
+            if(rayPayload.depth < gMaxReflectDepth+1 && currLightAmount != 0)
             {
                 BlinnPhongCalc(lightDir, worldNormal, worldPos, specularFactor, specularStrength*currLightAmount, specular);
             }

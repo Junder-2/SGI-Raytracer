@@ -65,7 +65,7 @@ Shader "RayTracing/DxrDiffuse"
 
 			ENDHLSL
 		}
-		
+
 		// basic rasterization pass that will allow us to see the material in SceneView
 		Pass
 		{
