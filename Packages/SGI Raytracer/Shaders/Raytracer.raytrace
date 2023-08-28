@@ -1,4 +1,4 @@
-#include "Utility/Common.cginc"
+#include "Utility/RaytraceCommon.cginc"
 #include "Utility/Skybox.cginc"
 
 #pragma max_recursion_depth 10
@@ -6,6 +6,9 @@
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 float _PixelSpreadAngle;
+
+float _NearClip;
+float _FarClip;
 
 bool _CullBackfaces;
 bool _UseSkyBox;
@@ -46,14 +49,13 @@ void Raytracer()
     RayDesc ray;
     ray.Origin = origin; 
     ray.Direction = direction; 
-    ray.TMin = 0;
-    ray.TMax = gClipDistance;
+    ray.TMin = _NearClip;
+    ray.TMax = _FarClip;
 
     RayPayload payload;
     payload.color = float4(0, 0, 0, 0);
     payload.randomSeed = seed;
 	payload.depth = 0;
-    //payload.lastPos = _WorldSpaceCameraPos;
     payload.frameIndex = dispatchId.x+dispatchId.y+(_FrameIndex % 2 ? 1 : 0);
     payload.data = 0;
 

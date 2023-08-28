@@ -2,7 +2,7 @@
 #define _ADDITIONAL_LIGHTS_VERTEX
 
 #include "Utility/Lights.hlsl"
-#include "Utility/Common.cginc"
+#include "Utility/RaytraceCommon.cginc"
 
 CBUFFER_START(UnityPerMaterial)
     float4 _Color;
