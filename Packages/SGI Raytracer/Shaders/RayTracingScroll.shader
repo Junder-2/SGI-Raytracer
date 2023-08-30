@@ -48,7 +48,7 @@ Shader "RayTracing/DxrScroll"
         [HideInInspector] _ZWrite("ZWrite", Float) = 0
 	}
 
-    CustomEditor "DXRShaderEditor"
+    CustomEditor "SGI_Raytracer.Editor.DXRShaderEditor"
 
 	SubShader
 	{

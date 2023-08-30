@@ -49,7 +49,7 @@ Shader "RayTracing/DxrFlipBook"
         [HideInInspector] _ZWrite("ZWrite", Float) = 0
 	}
 
-    CustomEditor "DXRShaderEditor"
+    CustomEditor "SGI_Raytracer.Editor.DXRShaderEditor"
 
 	SubShader
 	{
@@ -136,5 +136,28 @@ Shader "RayTracing/DxrFlipBook"
 			#include "SimpleDepthPass.cginc"
 			ENDHLSL
 		}
+		
+		 Pass
+        {
+            Name "Selection"
+            Tags { "LightMode" = "SceneSelectionPass" }
+
+            Cull Off
+
+            HLSLPROGRAM
+
+			float _FlipSpeed;
+			float _Width;
+			float _Height;
+
+			#define CALCULATEUV \
+				(TRANSFORM_TEX(v.uv, _MainTex) + float2(\
+			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) - (_Width * floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))), \
+			abs(floor(fmod(_FlipSpeed*_Time.y, _Width*_Height) * 1/_Width)))) \
+			*float2(1.0, 1.0) / float2(_Width, _Height);
+			
+			#include "SimpleSelectionPass.cginc"
+			ENDHLSL
+        }
 	}
 }

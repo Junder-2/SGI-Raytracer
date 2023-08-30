@@ -119,7 +119,7 @@ void ClosestHit(inout RayPayload rayPayload : SV_RayPayload, AttributeData attri
     rayPayload.color += float4((lerp(color.xyz, reflectionColor, reflectance)*lerp(1, (diffuse+indirect), alpha)), 1);
     rayPayload.color += float4(specular*specColor.rgb*alpha, 0);
     rayPayload.color *= float4(lerp(1, saturate(shadowFactor+indirect), alpha), 1);
-
+    
     // stop if we have reached max recursion depth
     if(rayPayload.depth +1 == gMaxDepth)
         return;

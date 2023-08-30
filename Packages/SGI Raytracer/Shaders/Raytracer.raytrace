@@ -8,7 +8,6 @@ float4x4 _CameraInverseProjection;
 float _PixelSpreadAngle;
 
 float _NearClip;
-float _FarClip;
 
 bool _CullBackfaces;
 bool _UseSkyBox;
@@ -50,7 +49,7 @@ void Raytracer()
     ray.Origin = origin; 
     ray.Direction = direction; 
     ray.TMin = _NearClip;
-    ray.TMax = _FarClip;
+    ray.TMax = gClipDistance;
 
     RayPayload payload;
     payload.color = float4(0, 0, 0, 0);
@@ -112,12 +111,3 @@ void ShadowMiss(inout ShadowHitInfo hit : SV_RayPayload)
 { 
     hit.isHit = 0;
 }
-/*
-// "back up" closest hit shader. it is used when we hit material without raytracing shader pass
-[shader("closesthit")]
-void ClosestHitMain(inout RayPayload payload : SV_RayPayload, AttributeData attributeData : SV_IntersectionAttributes)
-{
-	// simply return pink color to signal error
-	payload.color = float4(1.0f, 0.0f, 0.5f, 1);
-}
-*/

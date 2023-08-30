@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -9,6 +10,7 @@ namespace SGI_Raytracer
     public class RaytracingRenderPass : ScriptableRenderPass
     {
         private string profilerTag;
+        private ProfilingSampler rayProfilingSampler;
 
         private RTHandle raytraceTarget;
         private RenderTexture resultTexture;
@@ -33,7 +35,7 @@ namespace SGI_Raytracer
         private static readonly int id_RenderShadows = Shader.PropertyToID("gRenderShadows");
         private static readonly int id_ReflectionMode = Shader.PropertyToID("gReflectionMode");
         private static readonly int id_NearClip = Shader.PropertyToID("_NearClip");
-        private static readonly int id_FarClip = Shader.PropertyToID("_FarClip");
+        private static readonly int id_ClipDistance = Shader.PropertyToID("gClipDistance");
         private static readonly int id_SunSpread = Shader.PropertyToID("gSunSpread");
         private static readonly int id_Tex = Shader.PropertyToID("_Tex");
 
@@ -53,6 +55,7 @@ namespace SGI_Raytracer
         public RaytracingRenderPass(string profilerTag, RenderPassEvent renderPassEvent, RayTracingShader shader, LayerMask mask)
         {
             this.profilerTag = profilerTag;
+            rayProfilingSampler = new ProfilingSampler(profilerTag);
             updateLayers = mask;
             rayTracingShader = shader;
             this.renderPassEvent = renderPassEvent;
@@ -88,6 +91,11 @@ namespace SGI_Raytracer
             RenderingUtils.ReAllocateIfNeeded(ref raytraceTarget, colorDesc, name: "_RaytraceTexture");
         }
 
+        public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
+        {
+            base.Configure(cmd, cameraTextureDescriptor);
+        }
+
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             if (!renderingData.cameraData.postProcessEnabled) return;
@@ -98,17 +106,25 @@ namespace SGI_Raytracer
                 return;
 
             command = CommandBufferPool.Get(profilerTag);
-            if(init)
-                InitCommandBuffer();
 
-            frameIndex += Time.deltaTime*60f;
-        
-            UpdateSettingData(ref renderingData);
-            UpdateCameraData(ref renderingData);
+            using (new ProfilingScope(command, rayProfilingSampler))
+            {
+                context.ExecuteCommandBuffer(command);
+                command.Clear();
+                
+                if(init)
+                    InitCommandBuffer();
 
-            Render(ref renderingData);
-            command.EnableKeyword(raytracingFeature);
+                frameIndex += Time.deltaTime*60f;
+
+                UpdateSettingData(ref renderingData);
+                UpdateCameraData(ref renderingData);
+
+                Render(ref renderingData);
+                Shader.EnableKeyword(raytracingFeature);
+            }
             context.ExecuteCommandBuffer(command);
+            command.Clear();
             CommandBufferPool.Release(command);
         }
 
@@ -186,6 +202,7 @@ namespace SGI_Raytracer
                 command.SetRayTracingIntParam(rayTracingShader, id_UseSkyBox, 0);
             }
             
+            command.SetGlobalInteger(id_ClipDistance, (int)camera.farClipPlane);
             command.SetGlobalInteger(id_MaxReflectDepth, raytracingVolume.MaxReflections.GetValue<int>());
             command.SetGlobalInteger(id_MaxIndirectDepth, raytracingVolume.MaxIndirect.GetValue<int>());
             command.SetGlobalInteger(id_MaxRefractionDepth, raytracingVolume.MaxRefractions.GetValue<int>());
@@ -202,7 +219,6 @@ namespace SGI_Raytracer
         
             command.SetRayTracingIntParam(rayTracingShader, id_FrameIndex, Mathf.FloorToInt(frameIndex));
             command.SetRayTracingFloatParam(rayTracingShader, id_NearClip, camera.nearClipPlane);
-            command.SetRayTracingFloatParam(rayTracingShader, id_FarClip, camera.farClipPlane);
             command.SetRayTracingMatrixParam(rayTracingShader, id_CameraToWorld, camera.cameraToWorldMatrix);
             command.SetRayTracingMatrixParam(rayTracingShader, id_CameraInverseProjection, camera.projectionMatrix.inverse);
         

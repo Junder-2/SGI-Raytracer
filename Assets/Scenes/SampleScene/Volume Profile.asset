@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7817716477452228628
+--- !u!114 &-8313456075460294078
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6feb5ce32c664cc40af6171d60845394, type: 3}
   m_Name: Raytracing
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   Enable:
     m_OverrideState: 1
     m_Value: 1
@@ -20,14 +20,14 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
   ForceDoubleSided:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0
   SunSpread:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0
   MaxReflections:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 3
   MaxIndirect:
     m_OverrideState: 0
     m_Value: 0
@@ -36,13 +36,13 @@ MonoBehaviour:
     m_Value: 1
   MaxRefractions:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 4
   ShadowSamples:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
   ReflectionMode:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   SkyColor:
     m_OverrideState: 0
     m_Value: {r: 0, g: 0, b: 1, a: 1}
@@ -109,7 +109,7 @@ MonoBehaviour:
   m_Name: Volume Profile
   m_EditorClassIdentifier: 
   components:
-  - {fileID: -7817716477452228628}
+  - {fileID: -8313456075460294078}
   - {fileID: -343520855212018841}
   - {fileID: 6468538659464832847}
 --- !u!114 &659785236929737402

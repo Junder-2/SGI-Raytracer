@@ -1,3 +1,14 @@
 {
-	"name": "Junder.SGIRaytracer.Shader"
+    "name": "Junder.SGIRaytracer.Shader",
+    "rootNamespace": "",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

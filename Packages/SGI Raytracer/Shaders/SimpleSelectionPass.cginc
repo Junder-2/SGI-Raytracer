@@ -2,6 +2,7 @@
 #pragma fragment frag
 
 #pragma shader_feature_local _ USE_ALPHACLIP
+#pragma editor_sync_compilation
 
 #include "Utility/RasterHelpers.cginc"
 #include "HLSLSupport.cginc"
@@ -29,11 +30,15 @@ CBUFFER_END
 
 v2f vert(appdata v)
 {
+	UNITY_SETUP_INSTANCE_ID(v);
 	v2f o;
 	o.vertex = TransformObjectToHClip(v.vertex);
 	o.uv = CALCULATEUV;
 	return o;
 }
+
+int _ObjectId;
+int _PassValue;
 
 float4 frag(v2f i) : SV_Target
 {
@@ -42,5 +47,5 @@ float4 frag(v2f i) : SV_Target
 		clip(alpha - _AlphaClip);
 	#endif
 
-	return float4(1, 1, 1, alpha);
+	return float4(_ObjectId, 1, _PassValue, alpha);
 }
