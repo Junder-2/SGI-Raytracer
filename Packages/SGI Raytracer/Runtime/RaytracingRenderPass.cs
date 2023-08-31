@@ -14,7 +14,7 @@ namespace SGI_Raytracer
 
         private RTHandle raytraceTarget;
         private RenderTexture resultTexture;
-        private readonly RayTracingShader rayTracingShader;
+        private RayTracingShader rayTracingShader;
 
         private LayerMask updateLayers;
 
@@ -26,8 +26,6 @@ namespace SGI_Raytracer
         private GlobalKeyword raytracingFeature;
 
         private float frameIndex;
-
-        private bool init = false;
 
         private static readonly int id_MaxReflectDepth = Shader.PropertyToID("gMaxReflectDepth");
         private static readonly int id_MaxIndirectDepth = Shader.PropertyToID("gMaxIndirectDepth");
@@ -74,21 +72,41 @@ namespace SGI_Raytracer
             if (!raytracingVolume.IsActive()) return;
 
             frameIndex = 0;
-            init = true;
-        
-            command = CommandBufferPool.Get(this.profilerTag);
-            InitCommandBuffer();
         }
 
-        public void Setup(in RTHandle currentTarget) { }
+        public void Setup()
+        {
+            Debug.Log("hello");
+            command = CommandBufferPool.Get(this.profilerTag);
+            InitConfig();
+        }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            var colorDesc = renderingData.cameraData.cameraTargetDescriptor;
-            colorDesc.depthBufferBits = 0;
-            colorDesc.enableRandomWrite = true;
-            // Set up temporary color buffer (for blit)
-            RenderingUtils.ReAllocateIfNeeded(ref raytraceTarget, colorDesc, name: "_RaytraceTexture");
+            using (new ProfilingScope(command, rayProfilingSampler))
+            {
+                var colorDesc = renderingData.cameraData.cameraTargetDescriptor;
+                colorDesc.depthBufferBits = 0;
+                colorDesc.enableRandomWrite = true;
+                // Set up temporary color buffer (for blit)
+                RenderingUtils.ReAllocateIfNeeded(ref raytraceTarget, colorDesc, name: "_RaytraceTexture");
+                
+                frameIndex += Time.deltaTime*60f;
+                UpdateCameraData(cmd, ref renderingData);
+                UpdateSettingData(ref renderingData);
+                UpdateCulling(ref renderingData);
+            }
+
+            cullUpdate += Time.deltaTime;
+            
+            if(cullUpdate < 0.033f) return;
+
+            cullUpdate = 0;
+
+            
+            accelerationStructure.ClearInstances();
+            accelerationStructure.CullInstances(ref cullingConfig);
+            accelerationStructure.Build();
         }
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
@@ -111,14 +129,6 @@ namespace SGI_Raytracer
             {
                 context.ExecuteCommandBuffer(command);
                 command.Clear();
-                
-                if(init)
-                    InitCommandBuffer();
-
-                frameIndex += Time.deltaTime*60f;
-
-                UpdateSettingData(ref renderingData);
-                UpdateCameraData(ref renderingData);
 
                 Render(ref renderingData);
                 Shader.EnableKeyword(raytracingFeature);
@@ -130,17 +140,10 @@ namespace SGI_Raytracer
 
         public override void OnFinishCameraStackRendering(CommandBuffer cmd) => cmd.DisableKeyword(raytracingFeature);
 
-        void InitResultTexture(int width, int height)
-        {
-            InitCommandBuffer();
-        }
-
-        void InitCommandBuffer()
+        void InitConfig()
         {
             raytracingFeature = GlobalKeyword.Create("RAYTRACING_ON");
-            command.SetRayTracingShaderPass(rayTracingShader, "MyRaytracingPass");
-            command.SetRayTracingAccelerationStructure(rayTracingShader, "_RaytracingAccelerationStructure", accelerationStructure);
-        
+
             cullingConfig = new RayTracingInstanceCullingConfig
             {
                 flags = RayTracingInstanceCullingFlags.EnableLODCulling |
@@ -175,12 +178,17 @@ namespace SGI_Raytracer
             };
 
             cullingConfig.instanceTests = new[] { defaultTest, shadowTest };
+
+            cullUpdate = 50;
+            
+            accelerationStructure.ClearInstances();
+            accelerationStructure.CullInstances(ref cullingConfig);
+            accelerationStructure.Build();
         }
 
         void UpdateSettingData(ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
-
             var camera = cameraData.camera;
         
             command.SetRayTracingIntParam(rayTracingShader, id_CullBackfaces, raytracingVolume.ForceDoubleSided.GetValue<bool>() ? 0 : 1);
@@ -211,17 +219,25 @@ namespace SGI_Raytracer
             command.SetGlobalFloat(id_SunSpread, raytracingVolume.SunSpread.GetValue<float>()+1);
         }
 
-        void UpdateCameraData(ref RenderingData renderingData)
+        private float cullUpdate = 0f;
+
+        void UpdateCameraData(CommandBuffer cmd, ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
 
             var camera = cameraData.camera;
         
-            command.SetRayTracingIntParam(rayTracingShader, id_FrameIndex, Mathf.FloorToInt(frameIndex));
-            command.SetRayTracingFloatParam(rayTracingShader, id_NearClip, camera.nearClipPlane);
-            command.SetRayTracingMatrixParam(rayTracingShader, id_CameraToWorld, camera.cameraToWorldMatrix);
-            command.SetRayTracingMatrixParam(rayTracingShader, id_CameraInverseProjection, camera.projectionMatrix.inverse);
-        
+            cmd.SetRayTracingIntParam(rayTracingShader, id_FrameIndex, Mathf.FloorToInt(frameIndex));
+            cmd.SetRayTracingFloatParam(rayTracingShader, id_NearClip, camera.nearClipPlane);
+            cmd.SetRayTracingMatrixParam(rayTracingShader, id_CameraToWorld, camera.cameraToWorldMatrix);
+            cmd.SetRayTracingMatrixParam(rayTracingShader, id_CameraInverseProjection, camera.projectionMatrix.inverse);
+        }
+
+        void UpdateCulling(ref RenderingData renderingData)
+        {
+            ref var cameraData = ref renderingData.cameraData;
+            var camera = cameraData.camera;
+            
             cullingConfig.sphereRadius = camera.farClipPlane*.5f;
             cullingConfig.sphereCenter = cameraData.worldSpaceCameraPos;
             cullingConfig.lodParameters.fieldOfView = camera.fieldOfView;
@@ -238,9 +254,11 @@ namespace SGI_Raytracer
             ref var cameraData = ref renderingData.cameraData;
             var w = cameraData.camera.scaledPixelWidth;
             var h = cameraData.camera.scaledPixelHeight;
+            
+            command.SetRayTracingShaderPass(rayTracingShader, "MyRaytracingPass");
+            command.SetRayTracingAccelerationStructure(rayTracingShader, "_RaytracingAccelerationStructure", accelerationStructure);
 
             var camTarget = renderingData.cameraData.renderer.cameraColorTargetHandle;
-            InitResultTexture(w, h);
             command.SetRayTracingTextureParam(rayTracingShader, id_RenderTarget, raytraceTarget);
             command.DispatchRays(rayTracingShader, "Raytracer", (uint)w, (uint)h, 1u, cameraData.camera);
         

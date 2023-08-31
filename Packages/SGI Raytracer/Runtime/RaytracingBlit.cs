@@ -22,6 +22,8 @@ namespace SGI_Raytracer
         public override void Create()
         {
             rayTracingPass = new RaytracingRenderPass("Raytracer", Settings.whenToInsert, Settings.rayTracingShader, Settings.updateLayers);
+            
+            rayTracingPass.Setup();
         }
     
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
@@ -31,7 +33,7 @@ namespace SGI_Raytracer
 
         public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
         {
-            rayTracingPass.Setup(renderer.cameraColorTargetHandle);
+            
         }
     }
 }
