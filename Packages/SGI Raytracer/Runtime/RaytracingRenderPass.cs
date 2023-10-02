@@ -20,7 +20,7 @@ namespace SGI_Raytracer
 
         private static RayTracingAccelerationStructure accelerationStructure;
         private Raytracing raytracingVolume;
-        private RayTracingInstanceCullingConfig cullingConfig;
+        private RayTracingInstanceCullingConfig raytraceingCullingConfig;
 
         private CommandBuffer command;
         private GlobalKeyword raytracingFeature;
@@ -48,8 +48,7 @@ namespace SGI_Raytracer
         private static readonly int id_CameraToWorld = Shader.PropertyToID("_CameraToWorld");
         private static readonly int id_CameraInverseProjection = Shader.PropertyToID("_CameraInverseProjection");
         private static readonly int id_RenderTarget = Shader.PropertyToID("_RenderTarget");
-    
-    
+
         public RaytracingRenderPass(string profilerTag, RenderPassEvent renderPassEvent, RayTracingShader shader, LayerMask mask)
         {
             this.profilerTag = profilerTag;
@@ -76,9 +75,8 @@ namespace SGI_Raytracer
 
         public void Setup()
         {
-            Debug.Log("hello");
             command = CommandBufferPool.Get(this.profilerTag);
-            InitConfig();
+            CreateConfig();
         }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -102,10 +100,9 @@ namespace SGI_Raytracer
             if(cullUpdate < 0.033f) return;
 
             cullUpdate = 0;
-
             
             accelerationStructure.ClearInstances();
-            accelerationStructure.CullInstances(ref cullingConfig);
+            accelerationStructure.CullInstances(ref raytraceingCullingConfig);
             accelerationStructure.Build();
         }
 
@@ -140,11 +137,12 @@ namespace SGI_Raytracer
 
         public override void OnFinishCameraStackRendering(CommandBuffer cmd) => cmd.DisableKeyword(raytracingFeature);
 
-        void InitConfig()
+        private void CreateConfig()
         {
+            //Debug.Log("creating config");
             raytracingFeature = GlobalKeyword.Create("RAYTRACING_ON");
 
-            cullingConfig = new RayTracingInstanceCullingConfig
+            raytraceingCullingConfig = new RayTracingInstanceCullingConfig
             {
                 flags = RayTracingInstanceCullingFlags.EnableLODCulling |
                         RayTracingInstanceCullingFlags.EnableSphereCulling,
@@ -177,16 +175,16 @@ namespace SGI_Raytracer
                 shadowCastingModeMask = (1 << (int)ShadowCastingMode.On) | (1 << (int)ShadowCastingMode.TwoSided) | (1 << (int)ShadowCastingMode.ShadowsOnly)
             };
 
-            cullingConfig.instanceTests = new[] { defaultTest, shadowTest };
+            raytraceingCullingConfig.instanceTests = new[] { defaultTest, shadowTest };
 
             cullUpdate = 50;
             
             accelerationStructure.ClearInstances();
-            accelerationStructure.CullInstances(ref cullingConfig);
+            accelerationStructure.CullInstances(ref raytraceingCullingConfig);
             accelerationStructure.Build();
         }
 
-        void UpdateSettingData(ref RenderingData renderingData)
+        private void UpdateSettingData(ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
             var camera = cameraData.camera;
@@ -221,35 +219,35 @@ namespace SGI_Raytracer
 
         private float cullUpdate = 0f;
 
-        void UpdateCameraData(CommandBuffer cmd, ref RenderingData renderingData)
+        private void UpdateCameraData(CommandBuffer cmd, ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
 
             var camera = cameraData.camera;
-        
+            
             cmd.SetRayTracingIntParam(rayTracingShader, id_FrameIndex, Mathf.FloorToInt(frameIndex));
             cmd.SetRayTracingFloatParam(rayTracingShader, id_NearClip, camera.nearClipPlane);
             cmd.SetRayTracingMatrixParam(rayTracingShader, id_CameraToWorld, camera.cameraToWorldMatrix);
             cmd.SetRayTracingMatrixParam(rayTracingShader, id_CameraInverseProjection, camera.projectionMatrix.inverse);
         }
 
-        void UpdateCulling(ref RenderingData renderingData)
+        private void UpdateCulling(ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
             var camera = cameraData.camera;
             
-            cullingConfig.sphereRadius = camera.farClipPlane*.5f;
-            cullingConfig.sphereCenter = cameraData.worldSpaceCameraPos;
-            cullingConfig.lodParameters.fieldOfView = camera.fieldOfView;
-            cullingConfig.lodParameters.cameraPosition = cameraData.worldSpaceCameraPos;
-            cullingConfig.lodParameters.cameraPixelHeight = camera.pixelHeight;
+            raytraceingCullingConfig.sphereRadius = camera.farClipPlane*.5f;
+            raytraceingCullingConfig.sphereCenter = cameraData.worldSpaceCameraPos;
+            raytraceingCullingConfig.lodParameters.fieldOfView = camera.fieldOfView;
+            raytraceingCullingConfig.lodParameters.cameraPosition = cameraData.worldSpaceCameraPos;
+            raytraceingCullingConfig.lodParameters.cameraPixelHeight = camera.pixelHeight;
 
             accelerationStructure.ClearInstances();
-            accelerationStructure.CullInstances(ref cullingConfig);
+            accelerationStructure.CullInstances(ref raytraceingCullingConfig);
             accelerationStructure.Build();
         }
 
-        void Render(ref RenderingData renderingData)
+        private void Render(ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
             var w = cameraData.camera.scaledPixelWidth;

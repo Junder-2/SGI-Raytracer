@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering.Universal.Internal;
 
 namespace SGI_Raytracer
 {
@@ -10,14 +11,14 @@ namespace SGI_Raytracer
         private RaytracingRenderPass rayTracingPass;
 
         [Serializable]
-        public class MyFeatureSettings
+        public class RaytracePassSettings
         {
             public RayTracingShader rayTracingShader;
             public LayerMask updateLayers;
             public RenderPassEvent whenToInsert = RenderPassEvent.AfterRenderingSkybox;
         }
     
-        public MyFeatureSettings Settings = new();
+        public RaytracePassSettings Settings = new();
 
         public override void Create()
         {
@@ -33,7 +34,7 @@ namespace SGI_Raytracer
 
         public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
         {
-            
+           
         }
     }
 }

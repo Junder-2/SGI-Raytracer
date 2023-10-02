@@ -389,7 +389,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &204630049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -605,13 +605,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 298818763}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
-  m_LocalPosition: {x: -19.72, y: 3.19, z: -17.127432}
+  m_LocalRotation: {x: -0, y: 0.90594095, z: -0, w: 0.42340413}
+  m_LocalPosition: {x: -3.25, y: 1.26, z: -9.44}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 252689321}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 129.901, z: 0}
 --- !u!1 &830598996
 GameObject:
   m_ObjectHideFlags: 0
@@ -830,7 +830,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &952381672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1251,7 +1251,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1215765849
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1487,7 +1487,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1500855286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1524,7 +1524,7 @@ Light:
   m_Shape: 0
   m_Color: {r: 0, g: 1, b: 0.74585557, a: 1}
   m_Intensity: 1
-  m_Range: 8.7
+  m_Range: 4.56
   m_SpotAngle: 51.89058
   m_InnerSpotAngle: 0
   m_CookieSize: 10
@@ -1582,7 +1582,7 @@ Transform:
   m_GameObject: {fileID: 1500855285}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -4.21, y: -1.23, z: -6.59}
+  m_LocalPosition: {x: -4.21, y: -1.4, z: -6.69}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1642,7 +1642,7 @@ Light:
   m_Shape: 0
   m_Color: {r: 0, g: 1, b: 0.74585557, a: 1}
   m_Intensity: 1
-  m_Range: 8.7
+  m_Range: 11.26
   m_SpotAngle: 51.89058
   m_InnerSpotAngle: 0
   m_CookieSize: 10
@@ -6611,7 +6611,7 @@ Transform:
   m_GameObject: {fileID: 1674930757}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -16.7, y: -0.79, z: -19.67}
+  m_LocalPosition: {x: -3.55, y: -0.79, z: -9.41}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
